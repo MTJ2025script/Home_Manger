@@ -48,9 +48,7 @@ files {
     'html/booking.html',
     'html/admin.html',
     'html/css/*.css',
-    'html/js/*.js',
-    'html/images/*.png',
-    'html/images/*.jpg'
+    'html/js/*.js'
 }
 
 -- Dependencies
