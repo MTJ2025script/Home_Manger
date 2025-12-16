@@ -2,25 +2,41 @@
 
 Ein **komplettes, professionelles Immobilien-Verwaltungssystem** für FiveM GTA V RP Server mit umfangreichen Features.
 
+## 🎯 WIE ES FUNKTIONIERT
+
+**Wichtiger Workflow:**
+
+1. **Spieler besucht Makler-Büro** → Einer der 3 Standorte (Downtown / Vinewood / Del Perro)
+2. **Katalog öffnet sich** → Alle verfügbaren Häuser werden angezeigt (OHNE Blips auf Map!)
+3. **Spieler wählt Immobilie** → Besichtigung / Kurzzeitmiete / Kauf buchen
+4. **Nach Buchung** → Haus bekommt GRÜNEN BLIP auf Map + GPS-Route
+5. **Spieler fährt zum Haus** → Code eingeben und Zugang erhalten
+6. **Haus nutzen** → Garage, Safe, Wardrobe, etc. nutzen
+
+**⚠️ WICHTIG:** Verfügbare Häuser erscheinen NICHT auf der Karte! Sie sind nur im Makler-Katalog sichtbar und bekommen erst nach Buchung einen Blip.
+
 ## 📋 KERNFEATURES
 
-### 🏢 Multi-Makler-Büro System
-- **3 Büro-Standorte** mit Live-Sync
-- Downtown Realty, Vinewood Luxury Realty, Del Perro Beach Properties
-- Gemeinsamer Immobilien-Katalog über alle Standorte
+### 🏢 Multi-Makler-Büro System (3 Standorte)
+- **Downtown Realty** - vec4(1124.5, 226.5, 69.0, 0.0)
+- **Vinewood Luxury Realty** - vec4(1302.8, -528.5, 71.4, 90.0)
+- **Del Perro Beach Properties** - vec4(150.2, -1044.3, 29.4, 180.0)
+- Gemeinsamer Live-Katalog über alle Standorte (MySQL-Sync)
 - GPS-Integration zu allen Büros
 
-### 🏠 Immobilien-Portal
+### 🏠 Immobilien-Portal (NUI)
 - Website-ähnlicher Katalog mit moderner NUI
 - Filter nach Preis, Typ, Gebiet und Status
+- **Alle Immobilien-Klassen**: Office, House, Hotel, Apartment, Villa, Mansion
 - Dark/Neon Theme mit Glassmorphism-Effekten
 - Zentrale Benachrichtigungen mit Animationen
 
 ### 📅 Booking-System (Airbnb-Style)
 - **Besichtigungen** (30 Min, kostenlos, 4-stelliger Code)
-- **Kurzzeitmiete** (1-7 Tage mit Rabatt)
+- **Kurzzeitmiete** (1-7 Tage mit reduziertem Preis)
 - **Direktkauf** (Bar oder mit Hypothek)
-- Automatische GPS-Markierung und Zugangscodes
+- **Automatische GPS-Markierung** nach Buchung (GRÜNER BLIP)
+- Temporäre Zugangscodes (auto-generiert, verfallen automatisch)
 
 ### 💰 Zahlungssystem
 - **Hypotheken** mit konfigurierbaren Zinsen und Raten

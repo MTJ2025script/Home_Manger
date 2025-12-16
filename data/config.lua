@@ -1,6 +1,25 @@
 Config = {}
 
 -- ====================================================================================================
+-- 📖 WICHTIGER WORKFLOW - SO FUNKTIONIERT DAS SYSTEM:
+-- ====================================================================================================
+--
+-- 1️⃣ Spieler geht zu einem der 3 Makler-Büros (Downtown / Vinewood / Del Perro)
+-- 2️⃣ Im Büro öffnet sich der Katalog mit ALLEN verfügbaren Häusern
+-- 3️⃣ Spieler wählt ein Haus und bucht:
+--    - BESICHTIGUNG (30 Min, kostenlos, 4-stelliger Code)
+--    - KURZZEITMIETE (1-7 Tage, reduzierter Preis)
+--    - DIREKTKAUF (Vollpreis oder Hypothek)
+-- 4️⃣ ERST NACH BUCHUNG: Haus bekommt Blip auf Map + GPS-Route
+-- 5️⃣ Spieler fährt zum Haus und gibt Code ein (bei Besichtigung/Miete)
+-- 6️⃣ Spieler kann Haus nutzen (Garage, Safe, Wardrobe, etc.)
+--
+-- WICHTIG: Verfügbare Häuser haben KEINE Blips auf der Karte!
+--          Sie erscheinen nur im Makler-Katalog und werden erst nach Buchung sichtbar.
+--
+-- ====================================================================================================
+
+-- ====================================================================================================
 -- 🏠 ALLGEMEINE EINSTELLUNGEN
 -- ====================================================================================================
 
@@ -283,9 +302,9 @@ Config.MarketMode = 'HYBRID'                                -- Markt-Modus: 'OPE
 
 Config.Market = {
     openMarket = {
-        enabled = true,                                     -- Offener Markt (Marker an Häusern)
-        showBlips = true,                                   -- Blips anzeigen
-        showMarkers = true,                                 -- Marker anzeigen
+        enabled = false,                                    -- Offener Markt DEAKTIVIERT!
+        showBlips = false,                                  -- Blips NUR nach Buchung
+        showMarkers = false,                                -- Marker NUR nach Buchung
         markerType = 27,                                    -- Marker-Typ
         markerSize = vec3(1.0, 1.0, 1.0),
         markerColor = {r = 255, g = 255, b = 255, a = 100},

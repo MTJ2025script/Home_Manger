@@ -113,14 +113,21 @@ function CreatePropertyBlips()
     end
     propertyBlips = {}
     
-    -- Create blips for all properties
+    -- WICHTIG: Nur gebuchte/eigene Immobilien anzeigen!
+    -- Verfügbare Häuser werden NICHT auf der Karte gezeigt (nur im Makler-Katalog)
     for _, property in ipairs(properties) do
-        CreatePropertyBlip(property)
+        -- Nur Blips für gebuchte, vermietete oder eigene Immobilien
+        if property.status == 'owned' or property.status == 'rented' or property.status == 'viewing' then
+            CreatePropertyBlip(property)
+        end
     end
 end
 
 function CreatePropertyBlip(property)
-    if not Config.Market.openMarket.showBlips then return end
+    -- Sicherheitscheck: Keine Blips für verfügbare Häuser!
+    if property.status == 'available' then
+        return
+    end
     
     local blipConfig = Config.Properties.blips.available
     
@@ -177,27 +184,33 @@ CreateThread(function()
         nearbyProperties = {}
         
         -- Check nearby properties
+        -- WICHTIG: Nur gebuchte/eigene Immobilien zeigen Marker!
         for _, property in ipairs(properties) do
-            local propertyCoords = vector3(property.entrance_x, property.entrance_y, property.entrance_z)
-            local distance = #(playerCoords - propertyCoords)
+            -- Nur Marker für gebuchte, vermietete oder eigene Immobilien
+            local showProperty = (property.status == 'owned' or property.status == 'rented' or property.status == 'viewing')
             
-            if distance < 50.0 then
-                sleep = 0
+            if showProperty then
+                local propertyCoords = vector3(property.entrance_x, property.entrance_y, property.entrance_z)
+                local distance = #(playerCoords - propertyCoords)
                 
-                if Config.Market.openMarket.showMarkers and distance < Config.Properties.markers.drawDistance then
-                    DrawMarker(
-                        Config.Properties.markers.type,
-                        property.entrance_x, property.entrance_y, property.entrance_z,
-                        0.0, 0.0, 0.0,
-                        0.0, 0.0, 0.0,
-                        Config.Properties.markers.size.x, Config.Properties.markers.size.y, Config.Properties.markers.size.z,
-                        Config.Properties.markers.color.r, Config.Properties.markers.color.g, Config.Properties.markers.color.b, Config.Properties.markers.color.a,
-                        Config.Properties.markers.bobUpAndDown, false, 2, Config.Properties.markers.rotate, nil, nil, false
-                    )
-                end
-                
-                if distance < Config.Properties.markers.interactionDistance then
-                    table.insert(nearbyProperties, {property = property, distance = distance})
+                if distance < 50.0 then
+                    sleep = 0
+                    
+                    if distance < Config.Properties.markers.drawDistance then
+                        DrawMarker(
+                            Config.Properties.markers.type,
+                            property.entrance_x, property.entrance_y, property.entrance_z,
+                            0.0, 0.0, 0.0,
+                            0.0, 0.0, 0.0,
+                            Config.Properties.markers.size.x, Config.Properties.markers.size.y, Config.Properties.markers.size.z,
+                            Config.Properties.markers.color.r, Config.Properties.markers.color.g, Config.Properties.markers.color.b, Config.Properties.markers.color.a,
+                            Config.Properties.markers.bobUpAndDown, false, 2, Config.Properties.markers.rotate, nil, nil, false
+                        )
+                    end
+                    
+                    if distance < Config.Properties.markers.interactionDistance then
+                        table.insert(nearbyProperties, {property = property, distance = distance})
+                    end
                 end
             end
         end
