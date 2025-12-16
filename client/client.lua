@@ -502,25 +502,37 @@ local realtorNPCs = {}
 
 CreateThread(function()
     -- Load branches data
-    RealtorBranches = LoadResourceFile(GetCurrentResourceName(), 'data/branches.lua')
-    if RealtorBranches then
-        local func, err = load(RealtorBranches)
+    local branchesCode = LoadResourceFile(GetCurrentResourceName(), 'data/branches.lua')
+    if branchesCode then
+        local func, err = load(branchesCode)
         if func then
             RealtorBranches = func()
         else
             print('[Property Manager] Error loading branches.lua: ' .. tostring(err))
             RealtorBranches = {}
         end
+    else
+        print('[Property Manager] Error: Could not load data/branches.lua')
+        RealtorBranches = {}
+    end
+    
+    -- Ensure RealtorBranches is a table
+    if type(RealtorBranches) ~= 'table' then
+        print('[Property Manager] Error: RealtorBranches is not a table')
+        RealtorBranches = {}
     end
     
     -- Wait for game to be ready
     Wait(1000)
     
     -- Create blips and NPCs for realtor offices
-    for _, branch in ipairs(RealtorBranches) do
-        if branch.active then
+    for i, branch in ipairs(RealtorBranches) do
+        if branch and branch.active then
+            -- Extract coordinates from vec4
+            local x, y, z, w = branch.location.x, branch.location.y, branch.location.z, branch.location.w
+            
             -- Create blip
-            local blip = AddBlipForCoord(branch.location.x, branch.location.y, branch.location.z)
+            local blip = AddBlipForCoord(x, y, z)
             SetBlipSprite(blip, branch.blip.sprite)
             SetBlipDisplay(blip, branch.blip.display)
             SetBlipScale(blip, branch.blip.scale)
@@ -538,8 +550,8 @@ CreateThread(function()
                 Wait(100)
             end
             
-            local npc = CreatePed(4, npcHash, branch.location.x, branch.location.y, branch.location.z - 1.0, branch.location.w, false, true)
-            SetEntityHeading(npc, branch.location.w)
+            local npc = CreatePed(4, npcHash, x, y, z - 1.0, w, false, true)
+            SetEntityHeading(npc, w)
             FreezeEntityPosition(npc, true)
             SetEntityInvincible(npc, true)
             SetBlockingOfNonTemporaryEvents(npc, true)
@@ -567,30 +579,33 @@ CreateThread(function()
         local playerPed = PlayerPedId()
         local playerCoords = GetEntityCoords(playerPed)
         
-        for _, branch in ipairs(RealtorBranches) do
-            if branch.active then
-                local officeCoords = vector3(branch.location.x, branch.location.y, branch.location.z)
-                local distance = #(playerCoords - officeCoords)
-                
-                if distance < 50.0 then
-                    sleep = 0
+        -- Check if RealtorBranches is valid
+        if RealtorBranches and type(RealtorBranches) == 'table' then
+            for i, branch in ipairs(RealtorBranches) do
+                if branch and branch.active then
+                    local officeCoords = vector3(branch.location.x, branch.location.y, branch.location.z)
+                    local distance = #(playerCoords - officeCoords)
                     
-                    if distance < branch.marker.drawDistance then
-                        DrawMarker(
-                            branch.marker.type,
-                            branch.location.x, branch.location.y, branch.location.z,
-                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                            branch.marker.size.x, branch.marker.size.y, branch.marker.size.z,
-                            branch.marker.color.r, branch.marker.color.g, branch.marker.color.b, branch.marker.color.a,
-                            false, false, 2, false, nil, nil, false
-                        )
-                    end
-                    
-                    if distance < branch.marker.interactionDistance then
-                        ShowHelpNotification(_('press_to_open') .. ' ' .. branch.name)
+                    if distance < 50.0 then
+                        sleep = 0
                         
-                        if IsControlJustReleased(0, 38) then
-                            OpenPropertyCatalog()
+                        if distance < branch.marker.drawDistance then
+                            DrawMarker(
+                                branch.marker.type,
+                                branch.location.x, branch.location.y, branch.location.z,
+                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                branch.marker.size.x, branch.marker.size.y, branch.marker.size.z,
+                                branch.marker.color.r, branch.marker.color.g, branch.marker.color.b, branch.marker.color.a,
+                                false, false, 2, false, nil, nil, false
+                            )
+                        end
+                        
+                        if distance < branch.marker.interactionDistance then
+                            ShowHelpNotification(_('press_to_open') .. ' ' .. branch.name)
+                            
+                            if IsControlJustReleased(0, 38) then
+                                OpenPropertyCatalog()
+                            end
                         end
                     end
                 end
