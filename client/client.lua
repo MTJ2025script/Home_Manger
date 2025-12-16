@@ -562,14 +562,22 @@ CreateThread(function()
             AddTextComponentSubstringPlayerName(branch.name)
             EndTextCommandSetBlipName(blip)
             
-            -- Spawn NPC
+            -- Spawn NPC at ground level
             local npcHash = GetHashKey('a_m_y_business_01') -- Business NPC model
             RequestModel(npcHash)
             while not HasModelLoaded(npcHash) do
                 Wait(100)
             end
             
-            local npc = CreatePed(4, npcHash, x, y, z - 1.0, w, false, true)
+            -- Get proper ground Z coordinate
+            local groundZ = z
+            local foundGround, zCoord = GetGroundZFor_3dCoord(x, y, z + 50.0, false)
+            if foundGround then
+                groundZ = zCoord
+            end
+            
+            -- Create NPC at ground level
+            local npc = CreatePed(4, npcHash, x, y, groundZ, w, false, true)
             SetEntityHeading(npc, w)
             FreezeEntityPosition(npc, true)
             SetEntityInvincible(npc, true)
@@ -579,6 +587,9 @@ CreateThread(function()
             SetPedRelationshipGroupHash(npc, GetHashKey('CIVMALE'))
             SetPedFleeAttributes(npc, 0, false)
             SetPedCombatAttributes(npc, 17, true)
+            
+            -- Ensure NPC is placed on ground properly
+            PlaceObjectOnGroundProperly(npc)
             
             -- Store NPC reference
             table.insert(realtorNPCs, {
@@ -609,13 +620,14 @@ CreateThread(function()
                         sleep = 0
                         
                         if distance < branch.marker.drawDistance then
+                            -- Draw marker slightly above ground
                             DrawMarker(
                                 branch.marker.type,
-                                branch.location.x, branch.location.y, branch.location.z,
+                                branch.location.x, branch.location.y, branch.location.z + 0.1,
                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                 branch.marker.size.x, branch.marker.size.y, branch.marker.size.z,
                                 branch.marker.color.r, branch.marker.color.g, branch.marker.color.b, branch.marker.color.a,
-                                false, false, 2, false, nil, nil, false
+                                false, true, 2, false, nil, nil, false
                             )
                         end
                         
