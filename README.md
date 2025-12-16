@@ -121,6 +121,28 @@ Das System verwendet **13 Tabellen**:
    - Füge `ensure Home_Manger` zu `server.cfg` hinzu
    - Server neustarten
 
+**📖 Mehr Details:** Siehe [docs/INSTALLATION.md](docs/INSTALLATION.md)
+
+## 🏠 VERIFIZIERTE IMMOBILIEN
+
+Das System enthält **8 vollständig verifizierte Properties** aus offiziellen Quellen:
+
+- 🏢 **2x Office** (Arcadius, Maze Bank Tower)
+- 🏠 **1x House** (Whispymound Drive)
+- 🏨 **1x Hotel** (Vespucci Beach Suite)
+- 🏘️ **2x Apartment** (Eclipse Towers, Del Perro)
+- 🏡 **1x Villa** (Rockford Hills Luxury)
+- 🏰 **1x Mansion** (Richman Estate)
+
+**Alle Koordinaten verifiziert durch:**
+- RAGE Multiplayer Wiki
+- Cfx.re Community Forums
+- GTA Wiki (Fandom)
+- GTA Interactive Map
+- GitHub FiveM Resources
+
+**📖 Komplette Liste:** Siehe [docs/VERIFIED_PROPERTIES.md](docs/VERIFIED_PROPERTIES.md)
+
 ## ⚙️ KONFIGURATION
 
 Die Config befindet sich in `data/config.lua` und ist **vollständig auf Deutsch kommentiert**.
