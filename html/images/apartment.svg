@@ -1,0 +1,15 @@
+<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="aptGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0c4a6e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0369a1;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" fill="url(#aptGrad)"/>
+  <rect x="70" y="40" width="260" height="220" fill="#075985" stroke="#bae6fd" stroke-width="3"/>
+  <rect x="90" y="70" width="40" height="40" fill="#0284c7"/>
+  <rect x="140" y="70" width="40" height="40" fill="#0284c7"/>
+  <rect x="190" y="70" width="40" height="40" fill="#0284c7"/>
+  <rect x="240" y="70" width="40" height="40" fill="#0284c7"/>
+  <text x="200" y="200" font-family="Arial" font-size="28" fill="#e0f2fe" text-anchor="middle">🏘️ APARTMENT</text>
+</svg>

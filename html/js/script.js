@@ -75,18 +75,32 @@ function createPropertyCard(property) {
         'viewing': 'Besichtigung'
     }[statusClass] || 'Unbekannt';
     
+    // Get property type image
+    const imageMap = {
+        'office': 'office.svg',
+        'house': 'house.svg',
+        'hotel': 'hotel.svg',
+        'apartment': 'apartment.svg',
+        'villa': 'villa.svg',
+        'mansion': 'mansion.svg'
+    };
+    const imagePath = `images/${imageMap[property.type] || 'house.svg'}`;
+    
     card.innerHTML = `
-        <div class="property-card-header">
-            <div class="property-card-title">${property.name}</div>
-            <div class="property-card-status ${statusClass}">${statusText}</div>
+        <img src="${imagePath}" alt="${property.type}" class="property-card-image">
+        <div class="property-card-content">
+            <div class="property-card-header">
+                <div class="property-card-title">${property.name}</div>
+                <div class="property-card-status ${statusClass}">${statusText}</div>
+            </div>
+            <div class="property-card-info">
+                <p><span>📍 Gebiet:</span> <span>${property.area}</span></p>
+                <p><span>🏠 Typ:</span> <span>${property.type.toUpperCase()}</span></p>
+                <p><span>🛏️ Schlafzimmer:</span> <span>${property.bedrooms}</span></p>
+                <p><span>🚿 Badezimmer:</span> <span>${property.bathrooms}</span></p>
+            </div>
+            <div class="property-card-price">$${formatNumber(property.price)}</div>
         </div>
-        <div class="property-card-info">
-            <p><span>📍 Gebiet:</span> <span>${property.area}</span></p>
-            <p><span>🏠 Typ:</span> <span>${property.type}</span></p>
-            <p><span>🛏️ Schlafzimmer:</span> <span>${property.bedrooms}</span></p>
-            <p><span>🚿 Badezimmer:</span> <span>${property.bathrooms}</span></p>
-        </div>
-        <div class="property-card-price">$${formatNumber(property.price)}</div>
     `;
     
     return card;
