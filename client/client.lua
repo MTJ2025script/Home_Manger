@@ -497,41 +497,94 @@ end)
 -- ====================================================================================================
 
 -- Load realtor branches from data file
-local RealtorBranches = {}
+-- ====================================================================================================
+-- REALTOR BRANCH DATA (Embedded directly to avoid file loading issues)
+-- ====================================================================================================
+local RealtorBranches = {
+    -- Downtown Realty - Klassisches Geschäftsviertel
+    {
+        id = 1,
+        name = 'Downtown Realty',
+        description = 'Ihr vertrauenswürdiger Partner für Immobilien im Geschäftsviertel',
+        location = vector4(1124.5, 226.5, 69.0, 0.0),
+        blip = {
+            sprite = 375,
+            color = 3,
+            scale = 0.8,
+            shortRange = true,
+            display = 4
+        },
+        marker = {
+            type = 27,
+            size = vector3(1.5, 1.5, 0.5),
+            color = {r = 0, g = 255, b = 0, a = 100},
+            drawDistance = 25.0,
+            interactionDistance = 2.0
+        },
+        jobRestriction = nil,
+        commission = 5.0,
+        active = true
+    },
+    
+    -- Vinewood Luxury Realty - Premium Verkäufer
+    {
+        id = 2,
+        name = 'Vinewood Luxury Realty',
+        description = 'Exklusive Immobilien für anspruchsvolle Kunden',
+        location = vector4(1302.8, -528.5, 71.4, 90.0),
+        blip = {
+            sprite = 375,
+            color = 5,
+            scale = 0.8,
+            shortRange = true,
+            display = 4
+        },
+        marker = {
+            type = 27,
+            size = vector3(1.5, 1.5, 0.5),
+            color = {r = 255, g = 215, b = 0, a = 100},
+            drawDistance = 25.0,
+            interactionDistance = 2.0
+        },
+        jobRestriction = nil,
+        commission = 7.5,
+        active = true
+    },
+    
+    -- Del Perro Beach Properties - Casual Beach-Office
+    {
+        id = 3,
+        name = 'Del Perro Beach Properties',
+        description = 'Traumhafte Strandimmobilien und mehr',
+        location = vector4(150.2, -1044.3, 29.4, 180.0),
+        blip = {
+            sprite = 375,
+            color = 38,
+            scale = 0.8,
+            shortRange = true,
+            display = 4
+        },
+        marker = {
+            type = 27,
+            size = vector3(1.5, 1.5, 0.5),
+            color = {r = 0, g = 191, b = 255, a = 100},
+            drawDistance = 25.0,
+            interactionDistance = 2.0
+        },
+        jobRestriction = nil,
+        commission = 5.0,
+        active = true
+    }
+}
+
 local realtorNPCs = {}
 
 CreateThread(function()
-    -- Load branches data - execute in global environment for access to vec3/vec4
-    RealtorBranches = {}
-    local branchesCode = LoadResourceFile(GetCurrentResourceName(), 'data/branches.lua')
-    if branchesCode then
-        local func, loadErr = load(branchesCode, '@@data/branches.lua')
-        if func then
-            local success, result = pcall(func)
-            if success then
-                RealtorBranches = result or _G.RealtorBranches or {}
-                if type(RealtorBranches) == 'table' and #RealtorBranches > 0 then
-                    print('[Property Manager] Loaded ' .. #RealtorBranches .. ' realtor branches')
-                else
-                    print('[Property Manager] Warning: branches.lua returned empty data')
-                    RealtorBranches = {}
-                end
-            else
-                print('[Property Manager] Error executing branches.lua: ' .. tostring(result))
-                RealtorBranches = {}
-            end
-        else
-            print('[Property Manager] Error loading branches.lua: ' .. tostring(loadErr))
-            RealtorBranches = {}
-        end
-    else
-        print('[Property Manager] Error: Could not load data/branches.lua file')
-        RealtorBranches = {}
-    end
+    -- Branches are now embedded directly, no file loading needed
+    print('[Property Manager] Loaded ' .. #RealtorBranches .. ' realtor branches (embedded data)')
     
-    -- Final validation
     if type(RealtorBranches) ~= 'table' or #RealtorBranches == 0 then
-        print('[Property Manager] Warning: No realtor branches loaded, system may not function')
+        print('[Property Manager] ERROR: No realtor branches available!')
         RealtorBranches = {}
     end
     
