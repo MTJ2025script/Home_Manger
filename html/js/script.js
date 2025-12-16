@@ -77,14 +77,14 @@ function createPropertyCard(property) {
     
     // Get property type image
     const imageMap = {
-        'office': 'office.svg',
-        'house': 'house.svg',
-        'hotel': 'hotel.svg',
-        'apartment': 'apartment.svg',
-        'villa': 'villa.svg',
-        'mansion': 'mansion.svg'
+        'office': 'office.png',
+        'house': 'house.png',
+        'hotel': 'hotel.png',
+        'apartment': 'apartment.png',
+        'villa': 'villa.png',
+        'mansion': 'mansion.png'
     };
-    const imagePath = `images/${imageMap[property.type] || 'house.svg'}`;
+    const imagePath = `images/${imageMap[property.type] || 'house.png'}`;
     
     card.innerHTML = `
         <img src="${imagePath}" alt="${property.type}" class="property-card-image">
