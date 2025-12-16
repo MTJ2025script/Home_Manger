@@ -504,15 +504,24 @@ CreateThread(function()
     -- Load branches data
     local branchesCode = LoadResourceFile(GetCurrentResourceName(), 'data/branches.lua')
     if branchesCode then
-        -- Create environment with vec3 and vec4 functions
+        -- Create environment with all necessary functions
         local env = {
-            vec3 = vec3 or vector3,
-            vec4 = vec4 or vector4,
+            -- Vector functions
+            vec3 = vec3 or vector3 or function(x, y, z) return {x = x, y = y, z = z} end,
+            vec4 = vec4 or vector4 or function(x, y, z, w) return {x = x, y = y, z = z, w = w} end,
+            vector3 = vec3 or vector3 or function(x, y, z) return {x = x, y = y, z = z} end,
+            vector4 = vec4 or vector4 or function(x, y, z, w) return {x = x, y = y, z = z, w = w} end,
+            -- Standard Lua functions
             print = print,
             pairs = pairs,
             ipairs = ipairs,
             type = type,
             tostring = tostring,
+            tonumber = tonumber,
+            table = table,
+            math = math,
+            string = string,
+            -- Global for the file to set
             RealtorBranches = {}
         }
         
@@ -520,8 +529,14 @@ CreateThread(function()
         if func then
             local success, result = pcall(func)
             if success then
-                RealtorBranches = result or env.RealtorBranches
-                print('[Property Manager] Loaded ' .. #RealtorBranches .. ' realtor branches')
+                -- Check both the return value and the environment variable
+                RealtorBranches = result or env.RealtorBranches or {}
+                if type(RealtorBranches) == 'table' and #RealtorBranches > 0 then
+                    print('[Property Manager] Loaded ' .. #RealtorBranches .. ' realtor branches')
+                else
+                    print('[Property Manager] Warning: No realtor branches loaded, system may not function')
+                    RealtorBranches = {}
+                end
             else
                 print('[Property Manager] Error executing branches.lua: ' .. tostring(result))
                 RealtorBranches = {}
@@ -532,6 +547,7 @@ CreateThread(function()
         end
     else
         print('[Property Manager] Error: Could not load data/branches.lua')
+        print('[Property Manager] Warning: No realtor branches loaded, system may not function')
         RealtorBranches = {}
     end
     
