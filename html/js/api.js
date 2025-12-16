@@ -20,14 +20,7 @@ function sendMessage(action, data = {}) {
 
 // Get parent resource name
 function GetParentResourceName() {
-    let num = 0;
-    let resourceName = '';
-    
-    for (let i = 0; i < 5; i++) {
-        resourceName = invokeNative('0x10','0x06270642239FFE73','0x3' + String.fromCharCode(11 + 48 + 12 * (i - num - num)), i - num + 15 * i);
-    }
-    
-    return 'home_manager';
+    return 'Home_Manger';
 }
 
 // Listen for messages from FiveM client

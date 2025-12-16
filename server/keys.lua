@@ -77,8 +77,9 @@ function GivePropertyKey(propertyId, holder, permissionLevel, givenBy)
         
         -- Give physical key item if enabled
         if Config.Keys.usePhysicalKeys then
-            -- TODO: Give key item to player inventory
-            -- This depends on inventory system (ox_inventory, qb-inventory, etc.)
+            -- Note: Requires inventory integration (ox_inventory, qb-inventory, etc.)
+            -- Uncomment and adapt to your inventory system:
+            -- exports['ox_inventory']:AddItem(holder, Config.Keys.keyItem, 1, {property_id = propertyId, permission = permissionLevel})
         end
     end)
     
@@ -99,7 +100,9 @@ function RemovePropertyKey(propertyId, holder)
     
     -- Remove physical key item if enabled
     if Config.Keys.usePhysicalKeys then
-        -- TODO: Remove key item from player inventory
+        -- Note: Requires inventory integration (ox_inventory, qb-inventory, etc.)
+        -- Uncomment and adapt to your inventory system:
+        -- exports['ox_inventory']:RemoveItem(holder, Config.Keys.keyItem, 1, {property_id = propertyId})
     end
     
     return true
@@ -265,7 +268,10 @@ AddEventHandler('property:duplicateKeys', function(propertyId, paymentMethod)
         
         -- Give duplicate key item
         if Config.Keys.usePhysicalKeys then
-            -- TODO: Give duplicate key item
+            -- Note: Requires inventory integration (ox_inventory, qb-inventory, etc.)
+            -- Uncomment and adapt to your inventory system:
+            -- local keyData = keys[1]
+            -- exports['ox_inventory']:AddItem(identifier, Config.Keys.keyItem, 1, {property_id = propertyId, permission = keyData.permission_level})
         end
         
         -- Log action

@@ -1,0 +1,35 @@
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Temporary Files
+*.tmp
+*.bak
+
+# Node modules (if any)
+node_modules/
+
+# Build artifacts
+dist/
+build/
+
+# Environment files
+.env
+.env.local
+
+# Test files
+test/
+tests/
+
+# Cache
+.cache/

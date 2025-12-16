@@ -258,19 +258,10 @@ AddEventHandler('property:sell', function(propertyId, sellPrice)
                 ['@property'] = propertyId
             })
             
-            -- Remove vehicles from garage
-            MySQL.Async.fetchAll('SELECT * FROM garage_vehicles WHERE property_id = @property', {
+            -- Remove vehicles from garage (they remain in the garage table for recovery)
+            MySQL.Async.execute('UPDATE garage_vehicles SET stored = 0, property_id = NULL WHERE property_id = @property', {
                 ['@property'] = propertyId
-            }, function(vehicles)
-                for _, vehicle in ipairs(vehicles) do
-                    -- Return vehicles to public garage
-                    -- TODO: Implement vehicle return logic
-                end
-                
-                MySQL.Async.execute('DELETE FROM garage_vehicles WHERE property_id = @property', {
-                    ['@property'] = propertyId
-                })
-            end)
+            })
             
             -- Create transaction
             MySQL.Async.execute('INSERT INTO property_transactions (property_id, player_id, transaction_type, amount, payment_method, description) VALUES (@property, @player, @type, @amount, @method, @desc)', {
