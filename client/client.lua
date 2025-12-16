@@ -496,19 +496,67 @@ end)
 -- 🏢 REALTOR OFFICES
 -- ====================================================================================================
 
+-- Load realtor branches from data file
+local RealtorBranches = {}
+local realtorNPCs = {}
+
 CreateThread(function()
-    -- Create blips for realtor offices
-    for _, office in ipairs(Config.RealtorOffices) do
-        local blip = AddBlipForCoord(office.blip.x, office.blip.y, office.blip.z)
-        SetBlipSprite(blip, office.sprite)
-        SetBlipDisplay(blip, 4)
-        SetBlipScale(blip, office.scale)
-        SetBlipColour(blip, office.color)
-        SetBlipAsShortRange(blip, true)
-        
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(office.label)
-        EndTextCommandSetBlipName(blip)
+    -- Load branches data
+    RealtorBranches = LoadResourceFile(GetCurrentResourceName(), 'data/branches.lua')
+    if RealtorBranches then
+        local func, err = load(RealtorBranches)
+        if func then
+            RealtorBranches = func()
+        else
+            print('[Property Manager] Error loading branches.lua: ' .. tostring(err))
+            RealtorBranches = {}
+        end
+    end
+    
+    -- Wait for game to be ready
+    Wait(1000)
+    
+    -- Create blips and NPCs for realtor offices
+    for _, branch in ipairs(RealtorBranches) do
+        if branch.active then
+            -- Create blip
+            local blip = AddBlipForCoord(branch.location.x, branch.location.y, branch.location.z)
+            SetBlipSprite(blip, branch.blip.sprite)
+            SetBlipDisplay(blip, branch.blip.display)
+            SetBlipScale(blip, branch.blip.scale)
+            SetBlipColour(blip, branch.blip.color)
+            SetBlipAsShortRange(blip, branch.blip.shortRange)
+            
+            BeginTextCommandSetBlipName('STRING')
+            AddTextComponentSubstringPlayerName(branch.name)
+            EndTextCommandSetBlipName(blip)
+            
+            -- Spawn NPC
+            local npcHash = GetHashKey('a_m_y_business_01') -- Business NPC model
+            RequestModel(npcHash)
+            while not HasModelLoaded(npcHash) do
+                Wait(100)
+            end
+            
+            local npc = CreatePed(4, npcHash, branch.location.x, branch.location.y, branch.location.z - 1.0, branch.location.w, false, true)
+            SetEntityHeading(npc, branch.location.w)
+            FreezeEntityPosition(npc, true)
+            SetEntityInvincible(npc, true)
+            SetBlockingOfNonTemporaryEvents(npc, true)
+            SetPedDiesWhenInjured(npc, false)
+            SetPedCanPlayAmbientAnims(npc, true)
+            SetPedRelationshipGroupHash(npc, GetHashKey('CIVMALE'))
+            SetPedFleeAttributes(npc, 0, false)
+            SetPedCombatAttributes(npc, 17, true)
+            
+            -- Store NPC reference
+            table.insert(realtorNPCs, {
+                entity = npc,
+                branch = branch
+            })
+            
+            print('[Property Manager] Created realtor office: ' .. branch.name)
+        end
     end
 end)
 
@@ -519,34 +567,48 @@ CreateThread(function()
         local playerPed = PlayerPedId()
         local playerCoords = GetEntityCoords(playerPed)
         
-        for _, office in ipairs(Config.RealtorOffices) do
-            local officeCoords = vector3(office.marker.x, office.marker.y, office.marker.z)
-            local distance = #(playerCoords - officeCoords)
-            
-            if distance < 50.0 then
-                sleep = 0
+        for _, branch in ipairs(RealtorBranches) do
+            if branch.active then
+                local officeCoords = vector3(branch.location.x, branch.location.y, branch.location.z)
+                local distance = #(playerCoords - officeCoords)
                 
-                if distance < 25.0 then
-                    DrawMarker(
-                        27, officeCoords.x, officeCoords.y, officeCoords.z,
-                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                        1.5, 1.5, 0.5,
-                        0, 255, 0, 100,
-                        false, false, 2, false, nil, nil, false
-                    )
-                end
-                
-                if distance < 2.0 then
-                    ShowHelpNotification(_('press_to_open') .. ' ' .. office.name)
+                if distance < 50.0 then
+                    sleep = 0
                     
-                    if IsControlJustReleased(0, 38) then
-                        OpenPropertyCatalog()
+                    if distance < branch.marker.drawDistance then
+                        DrawMarker(
+                            branch.marker.type,
+                            branch.location.x, branch.location.y, branch.location.z,
+                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                            branch.marker.size.x, branch.marker.size.y, branch.marker.size.z,
+                            branch.marker.color.r, branch.marker.color.g, branch.marker.color.b, branch.marker.color.a,
+                            false, false, 2, false, nil, nil, false
+                        )
+                    end
+                    
+                    if distance < branch.marker.interactionDistance then
+                        ShowHelpNotification(_('press_to_open') .. ' ' .. branch.name)
+                        
+                        if IsControlJustReleased(0, 38) then
+                            OpenPropertyCatalog()
+                        end
                     end
                 end
             end
         end
         
         Wait(sleep)
+    end
+end)
+
+-- Cleanup on resource stop
+AddEventHandler('onResourceStop', function(resourceName)
+    if GetCurrentResourceName() == resourceName then
+        for _, npcData in ipairs(realtorNPCs) do
+            if DoesEntityExist(npcData.entity) then
+                DeleteEntity(npcData.entity)
+            end
+        end
     end
 end)
 
