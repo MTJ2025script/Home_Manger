@@ -2,10 +2,18 @@
 -- 🗄️ PROPERTY MANAGER DATABASE SCHEMA
 -- 13 Tabellen für komplettes Immobilien-Verwaltungssystem
 -- ====================================================================================================
-
--- Erstelle Datenbank falls nicht existiert
-CREATE DATABASE IF NOT EXISTS `es_extended` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `es_extended`;
+--
+-- WICHTIG: Führe dieses SQL-Skript in deiner ESX/QBCore Datenbank aus!
+-- Das Skript erstellt alle benötigten Tabellen in der aktuell ausgewählten Datenbank.
+--
+-- Beispiel für ESX Legacy:
+--   USE esxlegacy;
+--   SOURCE path/to/database.sql;
+--
+-- Oder in MySQL/phpMyAdmin:
+--   1. Wähle deine ESX-Datenbank aus
+--   2. Importiere diese SQL-Datei
+-- ====================================================================================================
 
 -- ====================================================================================================
 -- 1️⃣ PROPERTIES - Alle Immobilien mit Details

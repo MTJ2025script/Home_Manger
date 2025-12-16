@@ -22,17 +22,27 @@ Oder lade die ZIP-Datei herunter und entpacke sie in den `resources` Ordner.
 
 ## 🗄️ Schritt 2: Datenbank Einrichten
 
-### Option A: Manueller Import
+**⚠️ WICHTIG:** Das SQL-Skript MUSS in deiner existierenden ESX/QBCore Datenbank ausgeführt werden!
 
-1. Öffne deine MySQL-Datenbank (z.B. mit phpMyAdmin, HeidiSQL)
-2. Wähle deine ESX/QBCore Datenbank aus
+### Option A: Manueller Import (Empfohlen)
+
+1. Öffne deine MySQL-Datenbank (z.B. mit phpMyAdmin, HeidiSQL, DBeaver)
+2. **Wähle deine ESX/QBCore Datenbank aus** (z.B. `esxlegacy`, `es_extended`, `qbcore`)
 3. Importiere die Datei `sql/database.sql`
 
 ### Option B: Kommandozeile
 
 ```bash
-mysql -u dein_user -p dein_passwort < sql/database.sql
+# Für ESX Legacy
+mysql -u dein_user -p esxlegacy < sql/database.sql
+
+# Oder mit USE statement
+mysql -u dein_user -p
+USE esxlegacy;  # oder dein Datenbankname
+SOURCE /pfad/zu/Home_Manger/sql/database.sql;
 ```
+
+**Hinweis:** Ersetze `esxlegacy` mit dem tatsächlichen Namen deiner Datenbank!
 
 ### Verifizierung
 

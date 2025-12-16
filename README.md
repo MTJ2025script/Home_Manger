@@ -89,8 +89,12 @@ Das System verwendet **13 Tabellen**:
 
 2. **Datenbank importieren:**
    ```bash
-   mysql -u root -p < sql/database.sql
+   # WICHTIG: Wähle zuerst deine ESX/QBCore Datenbank!
+   mysql -u root -p
+   USE esxlegacy;  # Dein Datenbankname (z.B. esxlegacy, es_extended, qbcore)
+   SOURCE /pfad/zu/Home_Manger/sql/database.sql;
    ```
+   Oder nutze phpMyAdmin: Datenbank auswählen → SQL-Datei importieren
 
 3. **Config anpassen:**
    - Öffne `data/config.lua`
