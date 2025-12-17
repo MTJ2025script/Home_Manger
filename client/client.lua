@@ -820,6 +820,392 @@ AddEventHandler('property:openRentDialog', function(propertyId)
 end)
 
 -- ====================================================================================================
+-- 🏠 PROPERTY INTERACTION SYSTEM
+-- On-property menus, access control, key management
+-- ====================================================================================================
+
+local nearPropertyCheck = false
+local currentPropertyInteraction = nil
+local playerKeys = {}
+local playerBookings = {}
+
+-- Check if player is near a property they have access to
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(1000) -- Check every second
+        
+        if not nearPropertyCheck and LoadedProperties and #LoadedProperties > 0 then
+            local playerPed = PlayerPedId()
+            local playerCoords = GetEntityCoords(playerPed)
+            
+            for _, property in ipairs(LoadedProperties) do
+                local propertyCoords = vector3(property.entrance_x, property.entrance_y, property.entrance_z)
+                local distance = #(playerCoords - propertyCoords)
+                
+                -- Player is near property entrance (within 2.5 meters)
+                if distance < 2.5 then
+                    currentPropertyInteraction = property
+                    break
+                else
+                    if currentPropertyInteraction and currentPropertyInteraction.id == property.id then
+                        currentPropertyInteraction = nil
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- Draw property interaction markers and text
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0)
+        
+        if currentPropertyInteraction then
+            local property = currentPropertyInteraction
+            local propertyCoords = vector3(property.entrance_x, property.entrance_y, property.entrance_z)
+            local playerCoords = GetEntityCoords(PlayerPedId())
+            local distance = #(playerCoords - propertyCoords)
+            
+            if distance < 2.5 then
+                -- Draw marker
+                DrawMarker(1, property.entrance_x, property.entrance_y, property.entrance_z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.5, 1.5, 1.0, 0, 255, 0, 100, false, true, 2, false, nil, nil, false)
+                
+                -- Draw text
+                SetTextComponentFormat('STRING')
+                AddTextComponentString('[E] ' .. property.name .. ' - Interagieren')
+                SetDrawOrigin(property.entrance_x, property.entrance_y, property.entrance_z + 0.5, 0)
+                EndTextCommandDisplayText(0.0, 0.0)
+                ClearDrawOrigin()
+                
+                -- Check for key press
+                if IsControlJustReleased(0, 38) then -- E key
+                    OpenPropertyMenu(property.id)
+                end
+            end
+        end
+    end
+end)
+
+-- Open property interaction menu
+function OpenPropertyMenu(propertyId)
+    -- Check access first
+    TriggerServerEvent('property:checkAccess', propertyId)
+end
+
+-- Receive access check result
+RegisterNetEvent('property:accessResult')
+AddEventHandler('property:accessResult', function(propertyId, hasAccess, keyData)
+    if currentPropertyInteraction and currentPropertyInteraction.id == propertyId then
+        if hasAccess then
+            -- Player has keys, show full menu
+            ShowPropertyMenuWithAccess(propertyId, keyData)
+        else
+            -- Player doesn't have keys, show limited menu (access code input)
+            ShowPropertyMenuNoAccess(propertyId)
+        end
+    end
+end)
+
+-- Show property menu for players WITH access (have keys)
+function ShowPropertyMenuWithAccess(propertyId, keyData)
+    local property = currentPropertyInteraction
+    if not property then return end
+    
+    SendNUIMessage({
+        action = 'openPropertyMenu',
+        property = property,
+        keyData = keyData,
+        hasAccess = true
+    })
+    SetNuiFocus(true, true)
+end
+
+-- Show property menu for players WITHOUT access (no keys)
+function ShowPropertyMenuNoAccess(propertyId)
+    local property = currentPropertyInteraction
+    if not property then return end
+    
+    SendNUIMessage({
+        action = 'openPropertyMenu',
+        property = property,
+        hasAccess = false
+    })
+    SetNuiFocus(true, true)
+end
+
+-- Handle property menu actions
+RegisterNUICallback('propertyMenuAction', function(data, cb)
+    local action = data.action
+    local propertyId = data.propertyId
+    
+    if action == 'enter' then
+        -- Enter property (teleport to interior or open door)
+        EnterProperty(propertyId)
+    elseif action == 'lock' then
+        -- Lock/unlock property
+        TogglePropertyLock(propertyId)
+    elseif action == 'manageKeys' then
+        -- Open key management UI
+        OpenKeyManagementUI(propertyId)
+    elseif action == 'sell' then
+        -- Open sell property dialog
+        TriggerServerEvent('property:sell', propertyId)
+    elseif action == 'garage' then
+        -- Open garage
+        TriggerEvent('property:openGarage', propertyId)
+    elseif action == 'enterCode' then
+        -- Open access code input
+        OpenAccessCodeInput(propertyId)
+    elseif action == 'close' then
+        SetNuiFocus(false, false)
+    end
+    
+    cb('ok')
+end)
+
+-- ====================================================================================================
+-- 🔑 ACCESS CODE SYSTEM (FOR VIEWING/SHORT-TERM KEYS)
+-- ====================================================================================================
+
+function OpenAccessCodeInput(propertyId)
+    SendNUIMessage({
+        action = 'openAccessCodeDialog',
+        propertyId = propertyId
+    })
+    SetNuiFocus(true, true)
+end
+
+-- Handle access code submission
+RegisterNUICallback('submitAccessCode', function(data, cb)
+    local propertyId = data.propertyId
+    local accessCode = data.accessCode
+    
+    if not accessCode or #accessCode ~= 4 then
+        SendNUIMessage({
+            action = 'showNotification',
+            type = 'error',
+            message = 'Code muss 4-stellig sein'
+        })
+        cb('error')
+        return
+    end
+    
+    -- Validate code on server
+    TriggerServerEvent('property:validateCode', propertyId, accessCode)
+    cb('ok')
+end)
+
+-- Receive code validation result
+RegisterNetEvent('property:codeValidated')
+AddEventHandler('property:codeValidated', function(propertyId, keyData)
+    SendNUIMessage({
+        action = 'showNotification',
+        type = 'success',
+        message = 'Zugang gewährt! Code gültig für ' .. math.floor((keyData.expires_at - os.time()) / 60) .. ' Minuten'
+    })
+    
+    SendNUIMessage({
+        action = 'closeAccessCodeDialog'
+    })
+    
+    SetNuiFocus(false, false)
+    
+    -- Now player can enter
+    EnterProperty(propertyId)
+end)
+
+RegisterNetEvent('property:codeInvalid')
+AddEventHandler('property:codeInvalid', function(propertyId)
+    SendNUIMessage({
+        action = 'showNotification',
+        type = 'error',
+        message = 'Ungültiger oder abgelaufener Code'
+    })
+end)
+
+-- ====================================================================================================
+-- 🔑 KEY MANAGEMENT UI
+-- ====================================================================================================
+
+function OpenKeyManagementUI(propertyId)
+    -- Request key holders from server
+    TriggerServerEvent('property:getKeyHolders', propertyId)
+end
+
+-- Receive key holders data
+RegisterNetEvent('property:receiveKeyHolders')
+AddEventHandler('property:receiveKeyHolders', function(propertyId, keyHolders)
+    SendNUIMessage({
+        action = 'openKeyManagement',
+        propertyId = propertyId,
+        keyHolders = keyHolders
+    })
+    SetNuiFocus(true, true)
+end)
+
+-- Handle key management actions
+RegisterNUICallback('keyManagementAction', function(data, cb)
+    local action = data.action
+    local propertyId = data.propertyId
+    
+    if action == 'giveKey' then
+        local targetId = data.targetPlayerId
+        local permissionLevel = data.permissionLevel or 'guest'
+        TriggerServerEvent('property:giveKeys', propertyId, targetId, permissionLevel)
+    elseif action == 'removeKey' then
+        local targetId = data.targetPlayerId
+        TriggerServerEvent('property:removeKeys', propertyId, targetId)
+    elseif action == 'duplicateKey' then
+        local paymentMethod = data.paymentMethod or 'cash'
+        TriggerServerEvent('property:duplicateKeys', propertyId, paymentMethod)
+    elseif action == 'close' then
+        SetNuiFocus(false, false)
+    end
+    
+    cb('ok')
+end)
+
+-- Request player's keys on resource start
+Citizen.CreateThread(function()
+    Citizen.Wait(5000) -- Wait for player to spawn
+    TriggerServerEvent('property:getMyKeys')
+    TriggerServerEvent('property:getMyBookings')
+end)
+
+-- Receive player's keys
+RegisterNetEvent('property:receiveMyKeys')
+AddEventHandler('property:receiveMyKeys', function(keys)
+    playerKeys = keys
+end)
+
+-- Receive player's bookings
+RegisterNetEvent('property:receiveMyBookings')
+AddEventHandler('property:receiveMyBookings', function(bookings)
+    playerBookings = bookings
+end)
+
+-- ====================================================================================================
+-- 🏠 PROPERTY ENTRY SYSTEM
+-- ====================================================================================================
+
+function EnterProperty(propertyId)
+    local property = nil
+    for _, prop in ipairs(LoadedProperties or {}) do
+        if prop.id == propertyId then
+            property = prop
+            break
+        end
+    end
+    
+    if not property then return end
+    
+    -- Check if has access
+    local hasAccess = false
+    for _, key in ipairs(playerKeys) do
+        if key.property_id == propertyId and key.can_enter == 1 then
+            hasAccess = true
+            break
+        end
+    end
+    
+    if not hasAccess then
+        -- Check active bookings
+        for _, booking in ipairs(playerBookings) do
+            if booking.property_id == propertyId and booking.status == 'active' then
+                hasAccess = true
+                break
+            end
+        end
+    end
+    
+    if not hasAccess then
+        SendNUIMessage({
+            action = 'showNotification',
+            type = 'error',
+            message = 'Kein Zutritt - Schlüssel oder Code benötigt'
+        })
+        return
+    end
+    
+    -- Teleport to interior or show interior (depending on setup)
+    if property.interior and property.interior ~= '' then
+        -- Load interior IPL if needed
+        -- RequestIpl(property.interior)
+        
+        SendNUIMessage({
+            action = 'showNotification',
+            type = 'success',
+            message = 'Betrete ' .. property.name
+        })
+        
+        -- Note: Actual interior teleport logic would go here
+        -- This depends on your interior system setup
+    end
+end
+
+function TogglePropertyLock(propertyId)
+    -- Check if player has lock permission
+    local canLock = false
+    for _, key in ipairs(playerKeys) do
+        if key.property_id == propertyId and key.can_lock == 1 then
+            canLock = true
+            break
+        end
+    end
+    
+    if not canLock then
+        SendNUIMessage({
+            action = 'showNotification',
+            type = 'error',
+            message = 'Keine Berechtigung zum Abschließen'
+        })
+        return
+    end
+    
+    -- Toggle lock (play animation, sound, etc.)
+    SendNUIMessage({
+        action = 'showNotification',
+        type = 'info',
+        message = 'Türschloss umgeschaltet'
+    })
+    
+    -- Play lock sound
+    PlaySoundFrontend(-1, 'DOOR_BUZZ', 'MP_PLAYER_APARTMENT', true)
+end
+
+-- ====================================================================================================
+-- 📍 SET GPS TO PROPERTY
+-- ====================================================================================================
+
+RegisterNetEvent('property:setGPS')
+AddEventHandler('property:setGPS', function(x, y, z)
+    SetNewWaypoint(x, y)
+    
+    SendNUIMessage({
+        action = 'showNotification',
+        type = 'success',
+        message = 'GPS-Route zur Immobilie gesetzt'
+    })
+end)
+
+-- ====================================================================================================
+-- 🔔 BOOKING NOTIFICATIONS
+-- ====================================================================================================
+
+RegisterNetEvent('property:bookingCreated')
+AddEventHandler('property:bookingCreated', function(booking)
+    SendNUIMessage({
+        action = 'showNotification',
+        type = 'success',
+        message = 'Buchung erstellt!\nZugangscode: ' .. booking.accessCode
+    })
+    
+    -- Refresh bookings
+    TriggerServerEvent('property:getMyBookings')
+end)
+
+-- ====================================================================================================
 -- 📤 EXPORTS
 -- ====================================================================================================
 
@@ -833,3 +1219,8 @@ end)
 
 exports('HasPropertyAccess', HasPropertyAccess)
 exports('IsPropertyOwner', IsPropertyOwner)
+exports('GetPlayerKeys', function() return playerKeys end)
+exports('GetPlayerBookings', function() return playerBookings end)
+exports('OpenPropertyMenu', OpenPropertyMenu)
+exports('OpenAccessCodeInput', OpenAccessCodeInput)
+exports('OpenKeyManagementUI', OpenKeyManagementUI)

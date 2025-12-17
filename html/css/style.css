@@ -399,3 +399,338 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--accent);
 }
+
+/* ====================================================================================================
+   🏠 PROPERTY INTERACTION MENU
+   ==================================================================================================== */
+
+.property-menu-overlay,
+.access-code-overlay,
+.key-management-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.3s ease;
+}
+
+.property-menu-container,
+.access-code-dialog,
+.key-management-dialog {
+    background: var(--surface);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: scaleIn 0.3s ease;
+}
+
+.property-menu-header,
+.dialog-header {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white;
+    padding: 20px;
+    border-radius: 12px 12px 0 0;
+    position: relative;
+}
+
+.property-menu-header h2,
+.dialog-header h2 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.property-menu-header p {
+    margin: 5px 0 0;
+    opacity: 0.9;
+    font-size: 14px;
+}
+
+.close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.property-menu-content,
+.dialog-content {
+    padding: 20px;
+}
+
+.menu-section {
+    margin-bottom: 20px;
+}
+
+.menu-section h3 {
+    color: var(--primary);
+    margin-bottom: 10px;
+}
+
+.access-level {
+    color: var(--text-secondary);
+}
+
+.access-level strong {
+    color: var(--success);
+    text-transform: uppercase;
+}
+
+.menu-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.menu-btn {
+    padding: 15px 20px;
+    border: none;
+    border-radius: 8px;
+    background: var(--surface-light);
+    color: var(--text-primary);
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.menu-btn:hover {
+    background: var(--primary);
+    color: white;
+    transform: translateX(5px);
+}
+
+.menu-btn.primary {
+    background: var(--primary);
+    color: white;
+}
+
+.menu-btn.primary:hover {
+    background: var(--accent);
+}
+
+.menu-btn.danger {
+    background: var(--danger);
+    color: white;
+}
+
+.menu-btn.danger:hover {
+    background: #c0392b;
+}
+
+/* ====================================================================================================
+   🔢 ACCESS CODE DIALOG
+   ==================================================================================================== */
+
+.code-input-group {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin: 30px 0;
+}
+
+.code-digit {
+    width: 60px;
+    height: 70px;
+    text-align: center;
+    font-size: 32px;
+    font-weight: bold;
+    border: 2px solid var(--primary);
+    border-radius: 8px;
+    background: var(--surface-light);
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+.code-digit:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+    transform: scale(1.05);
+}
+
+.code-hint {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-top: 15px;
+}
+
+.dialog-actions {
+    display: flex;
+    gap: 10px;
+    padding: 20px;
+    border-top: 1px solid var(--border);
+}
+
+.btn-primary {
+    flex: 1;
+    padding: 12px 24px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary:hover {
+    background: var(--accent);
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    flex: 1;
+    padding: 12px 24px;
+    background: var(--surface-light);
+    color: var(--text-primary);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    background: var(--border);
+    transform: translateY(-2px);
+}
+
+/* ====================================================================================================
+   🔑 KEY MANAGEMENT
+   ==================================================================================================== */
+
+.key-holders-list,
+.key-actions {
+    margin-bottom: 25px;
+}
+
+.key-holders-list h3,
+.key-actions h3 {
+    color: var(--primary);
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+.key-holder-card {
+    background: var(--surface-light);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: all 0.2s;
+}
+
+.key-holder-card:hover {
+    background: var(--background);
+    transform: translateX(5px);
+}
+
+.key-holder-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.permission-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.permission-badge.owner {
+    background: var(--success);
+    color: white;
+}
+
+.permission-badge.tenant {
+    background: var(--warning);
+    color: white;
+}
+
+.permission-badge.guest {
+    background: var(--info);
+    color: white;
+}
+
+.key-permissions {
+    color: var(--text-secondary);
+    font-size: 14px;
+    flex: 1;
+}
+
+.btn-danger-sm {
+    padding: 8px 16px;
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-danger-sm:hover {
+    background: #c0392b;
+    transform: scale(1.05);
+}
+
+.no-data {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 30px;
+    font-style: italic;
+}
+
+/* ====================================================================================================
+   🎬 ANIMATIONS
+   ==================================================================================================== */
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
