@@ -743,16 +743,31 @@ CreateThread(function()
                 Wait(100)
             end
             
-            -- Get proper ground Z coordinate
+            -- Get proper ground Z coordinate with better detection
             local groundZ = z
-            local foundGround, zCoord = GetGroundZFor_3dCoord(x, y, z + 50.0, false)
-            if foundGround then
-                groundZ = zCoord
+            -- Request collision at location
+            RequestCollisionAtCoord(x, y, z)
+            Wait(100)
+            
+            -- Try multiple times to get accurate ground
+            for i = 1, 5 do
+                local foundGround, zCoord = GetGroundZFor_3dCoord(x, y, z + 100.0, false)
+                if foundGround then
+                    groundZ = zCoord + 1.0 -- Add 1 meter to ensure above ground
+                    break
+                end
+                Wait(100)
             end
             
             -- Create NPC at ground level
             local npc = CreatePed(4, npcHash, x, y, groundZ, w, false, true)
+            
+            -- Wait for ped to be created
+            Wait(100)
+            
+            -- Set ped properties
             SetEntityHeading(npc, w)
+            SetEntityCoordsNoOffset(npc, x, y, groundZ, false, false, false)
             FreezeEntityPosition(npc, true)
             SetEntityInvincible(npc, true)
             SetBlockingOfNonTemporaryEvents(npc, true)
@@ -762,8 +777,8 @@ CreateThread(function()
             SetPedFleeAttributes(npc, 0, false)
             SetPedCombatAttributes(npc, 17, true)
             
-            -- Ensure NPC is placed on ground properly
-            PlaceObjectOnGroundProperly(npc)
+            -- Force entity to collision
+            SetEntityCollision(npc, true, true)
             
             -- Store NPC reference
             table.insert(realtorNPCs, {

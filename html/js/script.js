@@ -1,22 +1,34 @@
 // ====================================================================================================
-// 📜 MAIN JAVASCRIPT
-// Main client-side logic for Property Manager UI
+// 🏠 PROPERTY MANAGER - COMPLETE UI SYSTEM
+// New implementation with category navigation and full action support
 // ====================================================================================================
 
-let properties = [];
+let allProperties = [];
+let currentCategory = null;
 let currentProperty = null;
+let filteredProperties = [];
+
+// Image mapping for property types
+const propertyImages = {
+    'office': 'images/office.png',
+    'house': 'images/house.png',
+    'hotel': 'images/hotel.png',
+    'apartment': 'images/apartment.png',
+    'villa': 'images/villa.png',
+    'mansion': 'images/mansion.png'
+};
 
 // ====================================================================================================
 // 🚀 INITIALIZATION
 // ====================================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Property Manager UI Loaded');
+    console.log('[Property Manager] UI System Loaded');
     
-    // Hide UI on ESC key
+    // ESC key handler
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
-            closeAll();
+            closeUI();
         }
     });
 });
@@ -27,556 +39,369 @@ window.addEventListener('message', (event) => {
     
     if (!data || !data.action) return;
     
+    console.log('[Property Manager] Received action:', data.action);
+    
     switch (data.action) {
         case 'openCatalog':
-            openCatalog(data);
+            openCatalog(data.properties || []);
             break;
         case 'closeCatalog':
-            closeCatalog();
+        case 'close':
+        case 'forceClose':
+            closeUI();
             break;
         case 'showNotification':
-            showNotification(data);
+            showNotification(data.type, data.title, data.message);
             break;
-        case 'openPropertyMenu':
-            openPropertyMenu(data);
-            break;
-        case 'openAccessCodeDialog':
-            openAccessCodeDialog(data);
-            break;
-        case 'closeAccessCodeDialog':
-            closeAccessCodeDialog();
-            break;
-        case 'openKeyManagement':
-            openKeyManagement(data);
+        case 'updateProperties':
+            allProperties = data.properties || [];
+            if (currentCategory) {
+                showCategory(currentCategory);
+            }
             break;
         default:
-            console.warn('Unknown action:', data.action);
+            console.warn('[Property Manager] Unknown action:', data.action);
     }
 });
 
 // ====================================================================================================
-// 📋 CATALOG FUNCTIONS
+// 📄 PAGE NAVIGATION
 // ====================================================================================================
 
-function openCatalog(data) {
-    properties = data.properties || [];
-    document.getElementById('catalog').classList.remove('hidden');
-    populateFilters();
-    renderProperties();
+function showPage(pageId) {
+    // Hide all pages
+    document.querySelectorAll('.page').forEach(page => {
+        page.classList.add('hidden');
+    });
+    
+    // Show requested page
+    const page = document.getElementById(pageId);
+    if (page) {
+        page.classList.remove('hidden');
+    }
 }
 
-function closeCatalog() {
-    document.getElementById('catalog').classList.add('hidden');
+function openCatalog(properties) {
+    console.log('[Property Manager] Opening catalog with', properties.length, 'properties');
+    allProperties = properties;
+    showPage('category-page');
+}
+
+function closeUI() {
+    console.log('[Property Manager] Closing UI');
+    
+    // Hide all pages
+    document.querySelectorAll('.page, .dialog').forEach(el => {
+        el.classList.add('hidden');
+    });
+    
+    // Reset state
+    currentCategory = null;
+    currentProperty = null;
+    filteredProperties = [];
+    
+    // Tell game to close
     sendMessage('close');
 }
 
-function populateFilters() {
-    const areas = [...new Set(properties.map(p => p.area))];
-    const areaSelect = document.getElementById('filter-area');
+function showCategory(category) {
+    console.log('[Property Manager] Showing category:', category);
+    currentCategory = category;
     
-    areaSelect.innerHTML = '<option value="all">Alle Gebiete</option>';
-    areas.forEach(area => {
-        const option = document.createElement('option');
-        option.value = area;
-        option.textContent = area;
-        areaSelect.appendChild(option);
-    });
+    // Filter properties by category
+    filteredProperties = allProperties.filter(p => p.type === category);
+    
+    // Update title
+    const categoryNames = {
+        'office': '🏢 Büros',
+        'house': '🏠 Häuser',
+        'hotel': '🏨 Hotels',
+        'apartment': '🏘️ Apartments',
+        'villa': '🏡 Villen',
+        'mansion': '🏰 Herrenhäuser'
+    };
+    document.getElementById('category-title').textContent = categoryNames[category] || 'Immobilien';
+    
+    // Render properties
+    renderPropertyList();
+    
+    // Show property list page
+    showPage('property-list-page');
 }
 
-function renderProperties(filtered = null) {
-    const propertyList = document.getElementById('property-list');
-    const propsToRender = filtered || properties;
+function backToCategories() {
+    currentCategory = null;
+    filteredProperties = [];
+    showPage('category-page');
+}
+
+function backToPropertyList() {
+    currentProperty = null;
+    showCategory(currentCategory);
+}
+
+// ====================================================================================================
+// 🏘️ PROPERTY LIST RENDERING
+// ====================================================================================================
+
+function renderPropertyList() {
+    const grid = document.getElementById('property-grid');
+    grid.innerHTML = '';
     
-    propertyList.innerHTML = '';
+    if (filteredProperties.length === 0) {
+        grid.innerHTML = '<div class="no-properties"><p>Keine Immobilien in dieser Kategorie verfügbar.</p></div>';
+        return;
+    }
     
-    propsToRender.forEach(property => {
+    filteredProperties.forEach(property => {
         const card = createPropertyCard(property);
-        propertyList.appendChild(card);
+        grid.appendChild(card);
     });
 }
 
 function createPropertyCard(property) {
     const card = document.createElement('div');
-    card.className = 'property-card animate-scaleIn';
+    card.className = 'property-card';
     card.onclick = () => showPropertyDetails(property);
     
-    const statusClass = property.status || 'available';
+    // Get image for property type
+    const imgSrc = propertyImages[property.type] || propertyImages['house'];
+    
+    // Status badge
     const statusText = {
         'available': 'Verfügbar',
-        'owned': 'Gekauft',
+        'owned': 'Verkauft',
         'rented': 'Vermietet',
-        'viewing': 'Besichtigung'
-    }[statusClass] || 'Unbekannt';
-    
-    // Get property type image
-    const imageMap = {
-        'office': 'office.png',
-        'house': 'house.png',
-        'hotel': 'hotel.png',
-        'apartment': 'apartment.png',
-        'villa': 'villa.png',
-        'mansion': 'mansion.png'
+        'viewing': 'In Besichtigung'
     };
-    const imagePath = `images/${imageMap[property.type] || 'house.png'}`;
+    const statusClass = property.status || 'available';
     
     card.innerHTML = `
-        <img src="${imagePath}" alt="${property.type}" class="property-card-image">
+        <div class="property-card-image">
+            <img src="${imgSrc}" alt="${property.name}">
+            <span class="property-status status-${statusClass}">${statusText[statusClass] || 'Verfügbar'}</span>
+        </div>
         <div class="property-card-content">
-            <div class="property-card-header">
-                <div class="property-card-title">${property.name}</div>
-                <div class="property-card-status ${statusClass}">${statusText}</div>
+            <h3>${property.name}</h3>
+            <p class="property-card-area">📍 ${property.area}</p>
+            <div class="property-card-specs">
+                <span>🛏️ ${property.bedrooms || 0}</span>
+                <span>🚿 ${property.bathrooms || 0}</span>
+                <span>🚗 ${property.garage_type || 'Keine'}</span>
             </div>
-            <div class="property-card-info">
-                <p><span>📍 Gebiet:</span> <span>${property.area}</span></p>
-                <p><span>🏠 Typ:</span> <span>${property.type.toUpperCase()}</span></p>
-                <p><span>🛏️ Schlafzimmer:</span> <span>${property.bedrooms}</span></p>
-                <p><span>🚿 Badezimmer:</span> <span>${property.bathrooms}</span></p>
-            </div>
-            <div class="property-card-price">$${formatNumber(property.price)}</div>
+            <p class="property-card-price">💰 $${formatPrice(property.price)}</p>
         </div>
     `;
     
     return card;
 }
 
-function applyFilters() {
-    const type = document.getElementById('filter-type').value;
-    const area = document.getElementById('filter-area').value;
-    const status = document.getElementById('filter-status').value;
-    
-    let filtered = properties;
-    
-    if (type !== 'all') {
-        filtered = filtered.filter(p => p.type === type);
-    }
-    
-    if (area !== 'all') {
-        filtered = filtered.filter(p => p.area === area);
-    }
-    
-    if (status !== 'all') {
-        filtered = filtered.filter(p => p.status === status);
-    }
-    
-    renderProperties(filtered);
-}
-
 // ====================================================================================================
-// 📱 PROPERTY DETAILS
+// 📋 PROPERTY DETAILS
 // ====================================================================================================
 
 function showPropertyDetails(property) {
+    console.log('[Property Manager] Showing details for:', property.id);
     currentProperty = property;
     
-    document.getElementById('property-name').textContent = property.name;
-    document.getElementById('property-price').textContent = '$' + formatNumber(property.price);
-    document.getElementById('property-area').textContent = property.area;
-    document.getElementById('property-type').textContent = property.type;
-    document.getElementById('property-bedrooms').textContent = property.bedrooms;
-    document.getElementById('property-bathrooms').textContent = property.bathrooms;
-    document.getElementById('property-status').textContent = property.status || 'available';
-    document.getElementById('property-desc').textContent = property.description || 'Keine Beschreibung verfügbar';
+    // Get image
+    const imgSrc = propertyImages[property.type] || propertyImages['house'];
+    document.getElementById('detail-property-img').src = imgSrc;
     
-    // Render actions
+    // Set basic info
+    document.getElementById('detail-property-name').textContent = property.name;
+    document.getElementById('detail-property-title').textContent = property.name;
+    document.getElementById('detail-property-price').textContent = `$${formatPrice(property.price)}`;
+    document.getElementById('detail-property-type').textContent = property.type.toUpperCase();
+    document.getElementById('detail-property-area').textContent = property.area;
+    document.getElementById('detail-property-bedrooms').textContent = property.bedrooms || 0;
+    document.getElementById('detail-property-bathrooms').textContent = property.bathrooms || 0;
+    document.getElementById('detail-property-garage').textContent = property.garage_type || 'Keine';
+    document.getElementById('detail-property-description').textContent = property.description || 'Keine Beschreibung verfügbar.';
+    
+    // Status badge
+    const statusText = {
+        'available': 'Verfügbar',
+        'owned': 'Verkauft',
+        'rented': 'Vermietet',
+        'viewing': 'In Besichtigung'
+    };
+    const statusEl = document.getElementById('detail-property-status');
+    statusEl.textContent = statusText[property.status] || 'Verfügbar';
+    statusEl.className = `status-badge status-${property.status || 'available'}`;
+    
+    // Render action buttons
     renderPropertyActions(property);
     
-    document.getElementById('property-details').classList.remove('hidden');
-}
-
-function closeDetails() {
-    document.getElementById('property-details').classList.add('hidden');
-    currentProperty = null;
+    // Show details page
+    showPage('property-details-page');
 }
 
 function renderPropertyActions(property) {
-    const actionsContainer = document.querySelector('.property-actions');
+    const actionsContainer = document.getElementById('property-actions');
     actionsContainer.innerHTML = '';
     
+    // Only show actions for available properties
     if (property.status === 'available') {
-        if (property.for_sale === 1) {
-            const purchaseBtn = document.createElement('button');
-            purchaseBtn.className = 'btn-success';
-            purchaseBtn.textContent = '✓ Kaufen';
-            purchaseBtn.onclick = () => purchaseProperty(property.id);
-            actionsContainer.appendChild(purchaseBtn);
-        }
-        
-        if (property.for_rent === 1) {
-            const rentBtn = document.createElement('button');
-            rentBtn.className = 'btn-primary';
-            rentBtn.textContent = '🏠 Mieten';
-            rentBtn.onclick = () => rentProperty(property.id);
-            actionsContainer.appendChild(rentBtn);
-        }
-        
+        // Viewing button
         const viewingBtn = document.createElement('button');
-        viewingBtn.className = 'btn-warning';
-        viewingBtn.textContent = '👁️ Besichtigen';
-        viewingBtn.onclick = () => bookViewing(property.id);
+        viewingBtn.className = 'btn btn-viewing';
+        viewingBtn.innerHTML = '👁️ Besichtigung Buchen ($500)';
+        viewingBtn.onclick = () => openViewingDialog(property);
         actionsContainer.appendChild(viewingBtn);
+        
+        // Rent button
+        const rentBtn = document.createElement('button');
+        rentBtn.className = 'btn btn-rent';
+        const monthlyRent = Math.floor(property.price * 0.1);
+        rentBtn.innerHTML = `🔑 Mieten ($${formatPrice(monthlyRent)}/Monat)`;
+        rentBtn.onclick = () => openRentDialog(property);
+        actionsContainer.appendChild(rentBtn);
+        
+        // Purchase button
+        const purchaseBtn = document.createElement('button');
+        purchaseBtn.className = 'btn btn-purchase';
+        purchaseBtn.innerHTML = `💰 Kaufen ($${formatPrice(property.price)})`;
+        purchaseBtn.onclick = () => openPurchaseDialog(property);
+        actionsContainer.appendChild(purchaseBtn);
+    } else {
+        // Property not available
+        const notAvailableMsg = document.createElement('p');
+        notAvailableMsg.className = 'not-available-message';
+        notAvailableMsg.textContent = 'Diese Immobilie ist derzeit nicht verfügbar.';
+        actionsContainer.appendChild(notAvailableMsg);
     }
 }
 
 // ====================================================================================================
-// 🎯 ACTIONS
+// 💬 DIALOGS - VIEWING
 // ====================================================================================================
 
-function purchaseProperty(propertyId) {
-    sendMessage('propertyAction', {
-        action: 'purchase',
-        propertyId: propertyId
-    });
-    closeDetails();
-    closeCatalog();
+function openViewingDialog(property) {
+    currentProperty = property;
+    document.getElementById('viewing-price').textContent = '$500';
+    document.getElementById('viewing-dialog').classList.remove('hidden');
 }
 
-function rentProperty(propertyId) {
-    sendMessage('propertyAction', {
-        action: 'rent',
-        propertyId: propertyId
-    });
-    closeDetails();
-    closeCatalog();
+function closeViewingDialog() {
+    document.getElementById('viewing-dialog').classList.add('hidden');
 }
 
-function bookViewing(propertyId) {
+function confirmViewing() {
+    if (!currentProperty) return;
+    
+    console.log('[Property Manager] Confirming viewing for:', currentProperty.id);
+    closeViewingDialog();
+    
+    // Send to game
     sendMessage('propertyAction', {
         action: 'viewing',
-        propertyId: propertyId
+        propertyId: currentProperty.id,
+        property: currentProperty
     });
-    closeDetails();
-    closeCatalog();
+    
+    showNotification('info', 'Besichtigung', 'Anfrage wird bearbeitet...');
+}
+
+// ====================================================================================================
+// 💬 DIALOGS - RENT
+// ====================================================================================================
+
+function openRentDialog(property) {
+    currentProperty = property;
+    const monthlyRent = Math.floor(property.price * 0.1);
+    const deposit = monthlyRent * 2;
+    
+    document.getElementById('rent-monthly').textContent = `$${formatPrice(monthlyRent)}`;
+    document.getElementById('rent-deposit').textContent = `$${formatPrice(deposit)}`;
+    document.getElementById('rent-dialog').classList.remove('hidden');
+}
+
+function closeRentDialog() {
+    document.getElementById('rent-dialog').classList.add('hidden');
+}
+
+function confirmRent() {
+    if (!currentProperty) return;
+    
+    console.log('[Property Manager] Confirming rent for:', currentProperty.id);
+    closeRentDialog();
+    
+    // Send to game
+    sendMessage('propertyAction', {
+        action: 'rent',
+        propertyId: currentProperty.id,
+        property: currentProperty
+    });
+    
+    showNotification('info', 'Miete', 'Mietvertrag wird erstellt...');
+}
+
+// ====================================================================================================
+// 💬 DIALOGS - PURCHASE
+// ====================================================================================================
+
+function openPurchaseDialog(property) {
+    currentProperty = property;
+    document.getElementById('purchase-price').textContent = `$${formatPrice(property.price)}`;
+    document.getElementById('purchase-dialog').classList.remove('hidden');
+}
+
+function closePurchaseDialog() {
+    document.getElementById('purchase-dialog').classList.add('hidden');
+}
+
+function confirmPurchase() {
+    if (!currentProperty) return;
+    
+    const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+    
+    console.log('[Property Manager] Confirming purchase for:', currentProperty.id, 'with payment:', paymentMethod);
+    closePurchaseDialog();
+    
+    // Send to game
+    sendMessage('propertyAction', {
+        action: 'purchase',
+        propertyId: currentProperty.id,
+        property: currentProperty,
+        paymentMethod: paymentMethod
+    });
+    
+    showNotification('info', 'Kauf', 'Kaufvertrag wird bearbeitet...');
 }
 
 // ====================================================================================================
 // 🔔 NOTIFICATIONS
 // ====================================================================================================
 
-function showNotification(data) {
+function showNotification(type, title, message) {
+    const container = document.getElementById('notifications');
+    
     const notification = document.createElement('div');
-    notification.className = `notification ${data.type} animate-slideIn`;
-    notification.id = `notif-${data.id || Date.now()}`;
-    
-    const icons = {
-        success: '✓',
-        error: '✗',
-        warning: '⚠',
-        info: 'ℹ'
-    };
-    
+    notification.className = `notification notification-${type}`;
     notification.innerHTML = `
-        <div class="notification-icon">${icons[data.type] || 'ℹ'}</div>
-        <div class="notification-content">
-            <div class="notification-title">${data.title}</div>
-            <div class="notification-message">${data.message}</div>
-        </div>
+        <strong>${title}</strong>
+        <p>${message}</p>
     `;
     
-    document.getElementById('notifications').appendChild(notification);
+    container.appendChild(notification);
     
-    // Auto-remove after duration
+    // Animate in
+    setTimeout(() => notification.classList.add('show'), 10);
+    
+    // Remove after 4 seconds
     setTimeout(() => {
-        removeNotification(notification.id);
-    }, data.duration || 5000);
-}
-
-function removeNotification(id) {
-    const notification = document.getElementById(id);
-    if (notification) {
-        notification.classList.add('animate-slideOut');
-        setTimeout(() => {
-            notification.remove();
-        }, 300);
-    }
-}
-
-// ====================================================================================================
-// 🏠 PROPERTY INTERACTION MENU
-// ====================================================================================================
-
-function openPropertyMenu(data) {
-    const property = data.property;
-    const hasAccess = data.hasAccess;
-    const keyData = data.keyData;
-    
-    let menuHTML = `
-        <div class="property-menu-overlay" id="propertyMenuOverlay">
-            <div class="property-menu-container">
-                <div class="property-menu-header">
-                    <h2>${property.name}</h2>
-                    <p>${property.area} • ${property.type}</p>
-                    <button class="close-btn" onclick="closePropertyMenu()">×</button>
-                </div>
-                <div class="property-menu-content">
-    `;
-    
-    if (hasAccess && keyData) {
-        // Player has keys - show full menu
-        menuHTML += `
-            <div class="menu-section">
-                <h3>🔑 Zugriff</h3>
-                <p class="access-level">Berechtigung: <strong>${keyData.permission_level}</strong></p>
-            </div>
-            <div class="menu-actions">
-        `;
-        
-        if (keyData.can_enter == 1) {
-            menuHTML += `<button class="menu-btn primary" onclick="propertyMenuAction('enter', '${property.id}')">🚪 Betreten</button>`;
-        }
-        
-        if (keyData.can_lock == 1) {
-            menuHTML += `<button class="menu-btn" onclick="propertyMenuAction('lock', '${property.id}')">🔒 Abschließen/Aufschließen</button>`;
-        }
-        
-        if (keyData.can_manage_keys == 1) {
-            menuHTML += `<button class="menu-btn" onclick="propertyMenuAction('manageKeys', '${property.id}')">🔑 Schlüsselverwaltung</button>`;
-        }
-        
-        if (keyData.can_access_garage == 1) {
-            menuHTML += `<button class="menu-btn" onclick="propertyMenuAction('garage', '${property.id}')">🚗 Garage</button>`;
-        }
-        
-        if (keyData.can_sell == 1) {
-            menuHTML += `<button class="menu-btn danger" onclick="propertyMenuAction('sell', '${property.id}')">💰 Verkaufen</button>`;
-        }
-        
-        menuHTML += `</div>`;
-    } else {
-        // Player has NO keys - show access code input
-        menuHTML += `
-            <div class="menu-section">
-                <h3>🔐 Zugangscode erforderlich</h3>
-                <p>Sie benötigen einen 4-stelligen Zugangscode oder Schlüssel für diese Immobilie.</p>
-            </div>
-            <div class="menu-actions">
-                <button class="menu-btn primary" onclick="propertyMenuAction('enterCode', '${property.id}')">🔢 Code eingeben</button>
-                <button class="menu-btn" onclick="closePropertyMenu()">❌ Abbrechen</button>
-            </div>
-        `;
-    }
-    
-    menuHTML += `
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.insertAdjacentHTML('beforeend', menuHTML);
-}
-
-function closePropertyMenu() {
-    const overlay = document.getElementById('propertyMenuOverlay');
-    if (overlay) {
-        overlay.remove();
-    }
-    sendMessage('propertyMenuAction', { action: 'close' });
-}
-
-function propertyMenuAction(action, propertyId) {
-    sendMessage('propertyMenuAction', { action, propertyId });
-    if (action !== 'manageKeys' && action !== 'garage' && action !== 'enterCode') {
-        closePropertyMenu();
-    }
-}
-
-// ====================================================================================================
-// 🔢 ACCESS CODE INPUT DIALOG
-// ====================================================================================================
-
-function openAccessCodeDialog(data) {
-    const propertyId = data.propertyId;
-    
-    const dialogHTML = `
-        <div class="access-code-overlay" id="accessCodeOverlay">
-            <div class="access-code-dialog">
-                <div class="dialog-header">
-                    <h2>🔐 Zugangscode eingeben</h2>
-                    <button class="close-btn" onclick="closeAccessCodeDialog()">×</button>
-                </div>
-                <div class="dialog-content">
-                    <p>Geben Sie den 4-stelligen Zugangscode ein:</p>
-                    <div class="code-input-group">
-                        <input type="text" id="codeDigit1" class="code-digit" maxlength="1" autofocus>
-                        <input type="text" id="codeDigit2" class="code-digit" maxlength="1">
-                        <input type="text" id="codeDigit3" class="code-digit" maxlength="1">
-                        <input type="text" id="codeDigit4" class="code-digit" maxlength="1">
-                    </div>
-                    <p class="code-hint">Hinweis: Sie erhalten diesen Code bei einer Buchung oder Besichtigung.</p>
-                </div>
-                <div class="dialog-actions">
-                    <button class="btn-primary" onclick="submitAccessCode('${propertyId}')">✓ Bestätigen</button>
-                    <button class="btn-secondary" onclick="closeAccessCodeDialog()">✗ Abbrechen</button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.insertAdjacentHTML('beforeend', dialogHTML);
-    
-    // Setup auto-focus and auto-advance for code inputs
-    setupCodeInputs();
-}
-
-function setupCodeInputs() {
-    const inputs = document.querySelectorAll('.code-digit');
-    inputs.forEach((input, index) => {
-        input.addEventListener('input', (e) => {
-            if (e.target.value.length === 1 && index < inputs.length - 1) {
-                inputs[index + 1].focus();
-            }
-        });
-        
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace' && e.target.value === '' && index > 0) {
-                inputs[index - 1].focus();
-            }
-        });
-        
-        // Only allow numbers
-        input.addEventListener('keypress', (e) => {
-            if (!/[0-9]/.test(e.key)) {
-                e.preventDefault();
-            }
-        });
-    });
-}
-
-function submitAccessCode(propertyId) {
-    const digit1 = document.getElementById('codeDigit1').value;
-    const digit2 = document.getElementById('codeDigit2').value;
-    const digit3 = document.getElementById('codeDigit3').value;
-    const digit4 = document.getElementById('codeDigit4').value;
-    
-    const accessCode = digit1 + digit2 + digit3 + digit4;
-    
-    if (accessCode.length !== 4) {
-        showNotification({
-            type: 'error',
-            title: 'Fehler',
-            message: 'Bitte geben Sie einen vollständigen 4-stelligen Code ein.'
-        });
-        return;
-    }
-    
-    sendMessage('submitAccessCode', { propertyId, accessCode });
-}
-
-function closeAccessCodeDialog() {
-    const overlay = document.getElementById('accessCodeOverlay');
-    if (overlay) {
-        overlay.remove();
-    }
-}
-
-// ====================================================================================================
-// 🔑 KEY MANAGEMENT UI
-// ====================================================================================================
-
-function openKeyManagement(data) {
-    const propertyId = data.propertyId;
-    const keyHolders = data.keyHolders;
-    
-    let keyHoldersHTML = '';
-    keyHolders.forEach(key => {
-        keyHoldersHTML += `
-            <div class="key-holder-card">
-                <div class="key-holder-info">
-                    <strong>${key.holder}</strong>
-                    <span class="permission-badge ${key.permission_level}">${key.permission_level}</span>
-                </div>
-                <div class="key-permissions">
-                    ${key.can_enter == 1 ? '🚪 Betreten' : ''}
-                    ${key.can_lock == 1 ? '🔒 Abschließen' : ''}
-                    ${key.can_invite == 1 ? '👥 Einladen' : ''}
-                    ${key.can_manage_keys == 1 ? '🔑 Verwalten' : ''}
-                </div>
-                <button class="btn-danger-sm" onclick="removeKey('${propertyId}', '${key.holder}')">Entfernen</button>
-            </div>
-        `;
-    });
-    
-    const managementHTML = `
-        <div class="key-management-overlay" id="keyManagementOverlay">
-            <div class="key-management-dialog">
-                <div class="dialog-header">
-                    <h2>🔑 Schlüsselverwaltung</h2>
-                    <button class="close-btn" onclick="closeKeyManagement()">×</button>
-                </div>
-                <div class="dialog-content">
-                    <div class="key-holders-list">
-                        <h3>Schlüsselinhaber (${keyHolders.length})</h3>
-                        ${keyHoldersHTML || '<p class="no-data">Keine Schlüsselinhaber</p>'}
-                    </div>
-                    <div class="key-actions">
-                        <h3>Aktionen</h3>
-                        <button class="btn-primary" onclick="showGiveKeyDialog('${propertyId}')">➕ Schlüssel vergeben</button>
-                        <button class="btn-secondary" onclick="duplicateKey('${propertyId}')">📋 Schlüssel duplizieren</button>
-                    </div>
-                </div>
-                <div class="dialog-actions">
-                    <button class="btn-secondary" onclick="closeKeyManagement()">Schließen</button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.insertAdjacentHTML('beforeend', managementHTML);
-}
-
-function closeKeyManagement() {
-    const overlay = document.getElementById('keyManagementOverlay');
-    if (overlay) {
-        overlay.remove();
-    }
-    sendMessage('keyManagementAction', { action: 'close' });
-}
-
-function removeKey(propertyId, targetPlayerId) {
-    if (confirm('Möchten Sie wirklich den Schlüssel von diesem Spieler entfernen?')) {
-        sendMessage('keyManagementAction', {
-            action: 'removeKey',
-            propertyId,
-            targetPlayerId
-        });
-        closeKeyManagement();
-    }
-}
-
-function showGiveKeyDialog(propertyId) {
-    const playerId = prompt('Spieler-ID eingeben:');
-    if (playerId) {
-        const permissions = ['owner', 'tenant', 'guest'];
-        const permissionLevel = prompt('Berechtigungsstufe (owner/tenant/guest):', 'guest');
-        
-        if (permissions.includes(permissionLevel)) {
-            sendMessage('keyManagementAction', {
-                action: 'giveKey',
-                propertyId,
-                targetPlayerId: parseInt(playerId),
-                permissionLevel
-            });
-            closeKeyManagement();
-        }
-    }
-}
-
-function duplicateKey(propertyId) {
-    if (confirm('Schlüssel duplizieren für $500?')) {
-        sendMessage('keyManagementAction', {
-            action: 'duplicateKey',
-            propertyId,
-            paymentMethod: 'cash'
-        });
-        closeKeyManagement();
-    }
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 4000);
 }
 
 // ====================================================================================================
 // 🛠️ UTILITY FUNCTIONS
 // ====================================================================================================
 
-function formatNumber(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+function formatPrice(price) {
+    return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 function sendMessage(action, data = {}) {
@@ -586,20 +411,16 @@ function sendMessage(action, data = {}) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(data)
-    }).catch(err => console.error('Error sending message:', err));
+    }).catch(err => {
+        console.error('[Property Manager] Failed to send message:', err);
+    });
 }
 
 function GetParentResourceName() {
-    return window.location.hostname === '' ? 'Home_Manger' : window.location.hostname;
+    if (window.location.protocol === 'file:') {
+        return 'Home_Manger'; // For testing in browser
+    }
+    
+    const match = window.location.hostname.match(/^([^\.]+)/);
+    return match ? match[1] : 'Home_Manger';
 }
-
-function closeAll() {
-    closeCatalog();
-    closeDetails();
-    sendMessage('close');
-}
-
-// Export functions for global access
-window.closeCatalog = closeCatalog;
-window.closeDetails = closeDetails;
-window.applyFilters = applyFilters;

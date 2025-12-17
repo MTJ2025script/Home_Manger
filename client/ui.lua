@@ -43,19 +43,40 @@ end)
 RegisterNUICallback('propertyAction', function(data, cb)
     local action = data.action
     local propertyId = data.propertyId
+    local property = data.property
+    local paymentMethod = data.paymentMethod
     
     if action == 'purchase' then
-        -- Open purchase dialog
+        -- Direct purchase with payment method
         CloseUI()
-        TriggerEvent('property:openPurchaseDialog', propertyId)
+        
+        -- Show notification
+        TriggerEvent('property:notify', 'info', 'Kauf', 'Immobilie wird gekauft...')
+        
+        -- Send to server with payment method
+        TriggerServerEvent('property:purchase', propertyId, paymentMethod or 'cash', false, nil)
+        
     elseif action == 'rent' then
-        -- Open rent dialog
+        -- Direct rent
         CloseUI()
-        TriggerEvent('property:openRentDialog', propertyId)
+        
+        -- Show notification
+        TriggerEvent('property:notify', 'info', 'Miete', 'Mietvertrag wird erstellt...')
+        
+        -- Calculate rent (10% of price monthly)
+        local monthlyRent = math.floor(property.price * 0.1)
+        TriggerServerEvent('property:rent', propertyId, 30, 'cash') -- 30 days
+        
     elseif action == 'viewing' then
-        -- Book viewing
+        -- Book viewing (30 min, $500)
         CloseUI()
+        
+        -- Show notification
+        TriggerEvent('property:notify', 'info', 'Besichtigung', 'Besichtigung wird gebucht...')
+        
+        -- Send to server
         TriggerServerEvent('property:bookViewing', propertyId)
+        
     elseif action == 'enter' then
         -- Enter property
         CloseUI()
@@ -133,6 +154,20 @@ AddEventHandler('property:searchResults', function(properties)
     SendNUIMessage({
         action = 'setSearchResults',
         properties = properties
+    })
+end)
+
+-- ====================================================================================================
+-- 🔔 NOTIFICATION EVENT
+-- ====================================================================================================
+
+RegisterNetEvent('property:notify')
+AddEventHandler('property:notify', function(type, title, message)
+    SendNUIMessage({
+        action = 'showNotification',
+        type = type,
+        title = title,
+        message = message
     })
 end)
 

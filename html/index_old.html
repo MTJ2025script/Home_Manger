@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Manager</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+    <!-- Notification Container -->
+    <div id="notifications"></div>
+    
+    <!-- Main Property Catalog -->
+    <div id="catalog" class="hidden">
+        <div class="catalog-container">
+            <div class="catalog-header">
+                <h1>🏠 Immobilien-Katalog</h1>
+                <button class="close-btn" onclick="closeCatalog()">&times;</button>
+            </div>
+            
+            <div class="catalog-filters">
+                <select id="filter-type">
+                    <option value="all">Alle Typen</option>
+                    <option value="apartment">Apartment</option>
+                    <option value="house">Haus</option>
+                    <option value="villa">Villa</option>
+                    <option value="mansion">Villa</option>
+                </select>
+                
+                <select id="filter-area">
+                    <option value="all">Alle Gebiete</option>
+                </select>
+                
+                <select id="filter-status">
+                    <option value="all">Alle Status</option>
+                    <option value="available">Verfügbar</option>
+                    <option value="owned">Gekauft</option>
+                    <option value="rented">Vermietet</option>
+                </select>
+                
+                <button onclick="applyFilters()">Filter Anwenden</button>
+            </div>
+            
+            <div id="property-list" class="property-grid">
+                <!-- Properties will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Property Details Modal -->
+    <div id="property-details" class="hidden">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2 id="property-name"></h2>
+                <button class="close-btn" onclick="closeDetails()">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="property-info">
+                    <p><strong>Preis:</strong> <span id="property-price"></span></p>
+                    <p><strong>Gebiet:</strong> <span id="property-area"></span></p>
+                    <p><strong>Typ:</strong> <span id="property-type"></span></p>
+                    <p><strong>Schlafzimmer:</strong> <span id="property-bedrooms"></span></p>
+                    <p><strong>Badezimmer:</strong> <span id="property-bathrooms"></span></p>
+                    <p><strong>Status:</strong> <span id="property-status"></span></p>
+                </div>
+                
+                <div class="property-description">
+                    <p id="property-desc"></p>
+                </div>
+                
+                <div class="property-actions">
+                    <!-- Actions will be dynamically inserted -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>
