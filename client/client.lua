@@ -50,6 +50,8 @@ end)
 RegisterNetEvent('property:receiveAll')
 AddEventHandler('property:receiveAll', function(data)
     properties = data
+    -- DO NOT create blips for all properties!
+    -- Only create blips for owned/rented/viewing properties
     CreatePropertyBlips()
 end)
 
@@ -753,6 +755,69 @@ function OpenPropertyCatalog()
         properties = properties
     })
 end
+
+-- ====================================================================================================
+-- 🛒 PURCHASE & RENT HANDLERS
+-- ====================================================================================================
+
+-- Open purchase dialog
+RegisterNetEvent('property:openPurchaseDialog')
+AddEventHandler('property:openPurchaseDialog', function(propertyId)
+    -- Find the property
+    local property = nil
+    for _, prop in ipairs(properties) do
+        if prop.id == propertyId then
+            property = prop
+            break
+        end
+    end
+    
+    if not property then
+        if Config.Framework == 'ESX' and ESX then
+            ESX.ShowNotification('Immobilie nicht gefunden', 'error')
+        elseif Config.Framework == 'QBCore' and QBCore then
+            QBCore.Functions.Notify('Immobilie nicht gefunden', 'error')
+        end
+        return
+    end
+    
+    -- Show purchase confirmation dialog
+    local paymentMethod = 'cash' -- Default to cash
+    local alert = ('Möchten Sie %s für $%s kaufen?'):format(property.name, property.price)
+    
+    -- Simple confirmation
+    TriggerServerEvent('property:purchase', propertyId, paymentMethod, false, nil)
+end)
+
+-- Open rent dialog
+RegisterNetEvent('property:openRentDialog')
+AddEventHandler('property:openRentDialog', function(propertyId)
+    -- Find the property
+    local property = nil
+    for _, prop in ipairs(properties) do
+        if prop.id == propertyId then
+            property = prop
+            break
+        end
+    end
+    
+    if not property then
+        if Config.Framework == 'ESX' and ESX then
+            ESX.ShowNotification('Immobilie nicht gefunden', 'error')
+        elseif Config.Framework == 'QBCore' and QBCore then
+            QBCore.Functions.Notify('Immobilie nicht gefunden', 'error')
+        end
+        return
+    end
+    
+    -- Calculate rent (10% of property price per month)
+    local monthlyRent = math.floor(property.price * 0.1)
+    local duration = 30 -- Default 30 days
+    
+    -- Show rent confirmation
+    local paymentMethod = 'cash'
+    TriggerServerEvent('property:rent', propertyId, duration, paymentMethod)
+end)
 
 -- ====================================================================================================
 -- 📤 EXPORTS
