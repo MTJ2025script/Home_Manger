@@ -21,6 +21,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// Listen for messages from game
+window.addEventListener('message', (event) => {
+    const data = event.data;
+    
+    if (!data || !data.action) return;
+    
+    switch (data.action) {
+        case 'openCatalog':
+            openCatalog(data);
+            break;
+        case 'closeCatalog':
+            closeCatalog();
+            break;
+        case 'showNotification':
+            showNotification(data);
+            break;
+        default:
+            console.warn('Unknown action:', data.action);
+    }
+});
+
 // ====================================================================================================
 // 📋 CATALOG FUNCTIONS
 // ====================================================================================================
@@ -263,6 +284,20 @@ function removeNotification(id) {
 
 function formatNumber(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function sendMessage(action, data = {}) {
+    fetch(`https://${GetParentResourceName()}/${action}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    }).catch(err => console.error('Error sending message:', err));
+}
+
+function GetParentResourceName() {
+    return window.location.hostname === '' ? 'Home_Manger' : window.location.hostname;
 }
 
 function closeAll() {

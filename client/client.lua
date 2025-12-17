@@ -706,6 +706,47 @@ AddEventHandler('onResourceStop', function(resourceName)
 end)
 
 function OpenPropertyCatalog()
+    -- Check if properties are loaded
+    if not properties or #properties == 0 then
+        -- Show notification that properties are loading
+        if Config.Framework == 'ESX' then
+            if ESX then
+                ESX.ShowNotification('Lade Immobilien...', 'info')
+            end
+        elseif Config.Framework == 'QBCore' then
+            if QBCore then
+                QBCore.Functions.Notify('Lade Immobilien...', 'info')
+            end
+        end
+        
+        -- Request properties from server
+        TriggerServerEvent('property:getAll')
+        
+        -- Wait up to 5 seconds for properties to load
+        local timeout = 50 -- 5 seconds (50 x 100ms)
+        local attempts = 0
+        
+        while (not properties or #properties == 0) and attempts < timeout do
+            Wait(100)
+            attempts = attempts + 1
+        end
+        
+        -- If still no properties, show error
+        if not properties or #properties == 0 then
+            if Config.Framework == 'ESX' then
+                if ESX then
+                    ESX.ShowNotification('Fehler beim Laden der Immobilien', 'error')
+                end
+            elseif Config.Framework == 'QBCore' then
+                if QBCore then
+                    QBCore.Functions.Notify('Fehler beim Laden der Immobilien', 'error')
+                end
+            end
+            return
+        end
+    end
+    
+    -- Open catalog with loaded properties
     SetNuiFocus(true, true)
     SendNUIMessage({
         action = 'openCatalog',
