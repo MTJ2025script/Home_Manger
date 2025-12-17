@@ -4,52 +4,78 @@
 -- ====================================================================================================
 
 -- ====================================================================================================
+-- 🔒 CENTRALIZED UI CLOSE FUNCTION (Prevents UI Freeze)
+-- ====================================================================================================
+
+local uiOpen = false
+
+function CloseUI()
+    -- Always clean up focus properly to prevent freeze
+    SetNuiFocus(false, false)
+    SetNuiFocusKeepInput(false)
+    
+    -- Send close message to NUI
+    SendNUIMessage({
+        action = 'close'
+    })
+    
+    uiOpen = false
+    
+    if Config.Debug then
+        print('[Property Manager] UI closed properly - focus cleaned')
+    end
+end
+
+-- Export for external use
+exports('CloseUI', CloseUI)
+
+-- ====================================================================================================
 -- 📥 NUI CALLBACKS
 -- ====================================================================================================
 
--- Close NUI
+-- Close NUI - Use centralized function
 RegisterNUICallback('close', function(data, cb)
-    SetNuiFocus(false, false)
+    CloseUI()
     cb('ok')
 end)
 
--- Property action
+-- Property action - Use CloseUI for all paths
 RegisterNUICallback('propertyAction', function(data, cb)
     local action = data.action
     local propertyId = data.propertyId
     
     if action == 'purchase' then
         -- Open purchase dialog
-        SetNuiFocus(false, false)
+        CloseUI()
         TriggerEvent('property:openPurchaseDialog', propertyId)
     elseif action == 'rent' then
         -- Open rent dialog
-        SetNuiFocus(false, false)
+        CloseUI()
         TriggerEvent('property:openRentDialog', propertyId)
     elseif action == 'viewing' then
         -- Book viewing
+        CloseUI()
         TriggerServerEvent('property:bookViewing', propertyId)
-        SetNuiFocus(false, false)
     elseif action == 'enter' then
         -- Enter property
+        CloseUI()
         TriggerEvent('property:enter', propertyId)
-        SetNuiFocus(false, false)
     elseif action == 'lock' then
         -- Toggle lock
+        CloseUI()
         TriggerServerEvent('property:toggleLock', propertyId)
-        SetNuiFocus(false, false)
     elseif action == 'garage' then
         -- Open garage
+        CloseUI()
         TriggerEvent('property:openGarage', propertyId)
-        SetNuiFocus(false, false)
     elseif action == 'storage' then
         -- Open storage
+        CloseUI()
         TriggerServerEvent('property:openStorage', propertyId, 'safe')
-        SetNuiFocus(false, false)
     elseif action == 'sell' then
         -- Sell property
+        CloseUI()
         TriggerServerEvent('property:sell', propertyId)
-        SetNuiFocus(false, false)
     end
     
     cb('ok')
@@ -57,22 +83,22 @@ end)
 
 -- Purchase property
 RegisterNUICallback('purchaseProperty', function(data, cb)
+    CloseUI()
     TriggerServerEvent('property:purchase', data.propertyId, data.paymentMethod, data.useMortgage, data.mortgageData)
-    SetNuiFocus(false, false)
     cb('ok')
 end)
 
 -- Rent property
 RegisterNUICallback('rentProperty', function(data, cb)
+    CloseUI()
     TriggerServerEvent('property:rent', data.propertyId, data.duration, data.paymentMethod)
-    SetNuiFocus(false, false)
     cb('ok')
 end)
 
 -- Book short-term rental
 RegisterNUICallback('bookRental', function(data, cb)
+    CloseUI()
     TriggerServerEvent('property:bookRental', data.propertyId, data.days)
-    SetNuiFocus(false, false)
     cb('ok')
 end)
 
@@ -115,6 +141,7 @@ end)
 -- ====================================================================================================
 
 exports('OpenUI', function(uiType, data)
+    uiOpen = true
     SetNuiFocus(true, true)
     SendNUIMessage({
         action = 'open',
@@ -123,9 +150,37 @@ exports('OpenUI', function(uiType, data)
     })
 end)
 
-exports('CloseUI', function()
-    SetNuiFocus(false, false)
-    SendNUIMessage({
-        action = 'close'
-    })
+-- CloseUI export already defined above
+
+-- ====================================================================================================
+-- ⌨️ KEY HANDLERS
+-- ====================================================================================================
+
+-- ESC key handler to close UI
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0)
+        
+        if uiOpen then
+            -- Check for ESC key (ID: 322)
+            if IsControlJustReleased(0, 322) then
+                CloseUI()
+            end
+        else
+            Citizen.Wait(500)
+        end
+    end
+end)
+
+-- ====================================================================================================
+-- 🛑 RESOURCE STOP HANDLER
+-- ====================================================================================================
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    
+    -- Close UI on resource stop to prevent freeze
+    if uiOpen then
+        CloseUI()
+    end
 end)

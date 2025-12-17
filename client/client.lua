@@ -50,9 +50,9 @@ end)
 RegisterNetEvent('property:receiveAll')
 AddEventHandler('property:receiveAll', function(data)
     properties = data
-    -- DO NOT create blips for all properties!
-    -- Only create blips for owned/rented/viewing properties
-    CreatePropertyBlips()
+    -- DO NOT create blips here! Properties should NOT have blips until player books them.
+    -- Blips are only created when server confirms booking via 'property:bookingConfirmed'
+    -- CreatePropertyBlips() -- REMOVED: No automatic blips for all properties
 end)
 
 -- Receive owned properties
@@ -65,6 +65,107 @@ end)
 RegisterNetEvent('property:receiveMyKeys')
 AddEventHandler('property:receiveMyKeys', function(data)
     playerKeys = data
+end)
+
+-- ====================================================================================================
+-- 🎫 BOOKING EVENTS (Event-Driven Blip Creation)
+-- ====================================================================================================
+
+-- Booking confirmed - CREATE blip for this player
+RegisterNetEvent('property:bookingConfirmed')
+AddEventHandler('property:bookingConfirmed', function(payload)
+    --[[
+        payload = {
+            propertyId = string,
+            coords = {x, y, z},
+            bookingType = 'viewing'|'rent'|'buy',
+            expiresAt = timestamp (for viewing/rent) or nil,
+            propertyName = string,
+            enableRoute = boolean (true for viewing)
+        }
+    ]]
+    
+    CreateOrUpdatePropertyBlip(payload.propertyId, payload.coords, {
+        name = payload.propertyName or 'Gebuchte Immobilie',
+        enableRoute = payload.enableRoute or false,
+        sprite = 40,
+        scale = 0.8
+    })
+    
+    -- Show notification
+    local message = 'Blip erstellt für: ' .. (payload.propertyName or 'Immobilie')
+    if payload.bookingType == 'viewing' then
+        message = message .. ' (Besichtigung - 30 Min)'
+    elseif payload.bookingType == 'rent' then
+        message = message .. ' (Miete aktiv)'
+    elseif payload.bookingType == 'buy' then
+        message = message .. ' (Eigentum)'
+    end
+    
+    ShowNotification(message, 'success')
+end)
+
+-- Booking expired - REMOVE blip
+RegisterNetEvent('property:bookingExpired')
+AddEventHandler('property:bookingExpired', function(propertyId)
+    RemovePropertyBlip(propertyId)
+    ShowNotification('Besichtigung abgelaufen', 'info')
+end)
+
+-- Lease ended - REMOVE blip
+RegisterNetEvent('property:leaseEnded')
+AddEventHandler('property:leaseEnded', function(propertyId)
+    RemovePropertyBlip(propertyId)
+    ShowNotification('Mietvertrag beendet', 'info')
+end)
+
+-- Evicted - REMOVE blip
+RegisterNetEvent('property:evicted')
+AddEventHandler('property:evicted', function(propertyId, reason)
+    RemovePropertyBlip(propertyId)
+    ShowNotification('Aus Immobilie entfernt: ' .. (reason or 'Räumung'), 'error')
+end)
+
+-- Ownership transferred - UPDATE blip (old owner loses, new owner gets)
+RegisterNetEvent('property:ownershipTransferred')
+AddEventHandler('property:ownershipTransferred', function(propertyId, newOwnerId)
+    local playerId = PlayerId()
+    local playerServerId = GetPlayerServerId(playerId)
+    
+    -- If I'm the new owner, I'll get a bookingConfirmed event
+    -- If I was the old owner, remove my blip
+    if playerServerId ~= newOwnerId then
+        RemovePropertyBlip(propertyId)
+        ShowNotification('Eigentum übertragen', 'info')
+    end
+end)
+
+-- Sync player access - called on PlayerLoaded/relog
+RegisterNetEvent('property:syncPlayerAccess')
+AddEventHandler('property:syncPlayerAccess', function(accessList)
+    --[[
+        accessList = {
+            { propertyId, coords, bookingType, propertyName, expiresAt, enableRoute },
+            ...
+        }
+    ]]
+    
+    -- Clear existing property blips
+    ClearAllPropertyBlips()
+    
+    -- Create blips for all active access
+    for _, access in ipairs(accessList) do
+        CreateOrUpdatePropertyBlip(access.propertyId, access.coords, {
+            name = access.propertyName,
+            enableRoute = access.enableRoute or false,
+            sprite = 40,
+            scale = 0.8
+        })
+    end
+    
+    if Config.Debug then
+        print('[Property Manager] Synced ' .. #accessList .. ' property blips')
+    end
 end)
 
 -- Update single property
@@ -106,54 +207,78 @@ end)
 -- 🗺️ BLIPS & MARKERS
 -- ====================================================================================================
 
-local propertyBlips = {}
+-- ====================================================================================================
+-- 🗺️ BLIP MANAGER (Player-Specific, Event-Driven)
+-- ====================================================================================================
 
-function CreatePropertyBlips()
-    -- Remove existing blips
-    for _, blip in pairs(propertyBlips) do
-        RemoveBlip(blip)
-    end
-    propertyBlips = {}
+local BranchBlips = {} -- 3 permanent realtor office blips
+local PropertyBlips = {} -- Dynamic player-specific property blips (by propertyId)
+
+-- Create or update a property blip (called when server confirms booking)
+function CreateOrUpdatePropertyBlip(propertyId, coords, opts)
+    opts = opts or {}
     
-    -- WICHTIG: Nur gebuchte/eigene Immobilien anzeigen!
-    -- Verfügbare Häuser werden NICHT auf der Karte gezeigt (nur im Makler-Katalog)
-    for _, property in ipairs(properties) do
-        -- Nur Blips für gebuchte, vermietete oder eigene Immobilien
-        if property.status == 'owned' or property.status == 'rented' or property.status == 'viewing' then
-            CreatePropertyBlip(property)
+    -- Remove existing blip if any
+    if PropertyBlips[propertyId] then
+        RemoveBlip(PropertyBlips[propertyId])
+    end
+    
+    -- Create new blip
+    local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
+    SetBlipSprite(blip, opts.sprite or 40) -- House icon
+    SetBlipDisplay(blip, 4)
+    SetBlipScale(blip, opts.scale or 0.8)
+    SetBlipColour(blip, 2) -- GREEN for all player properties (viewing/rent/owned)
+    SetBlipAsShortRange(blip, true)
+    
+    BeginTextCommandSetBlipName('STRING')
+    AddTextComponentSubstringPlayerName(opts.name or 'Gebuchte Immobilie')
+    EndTextCommandSetBlipName(blip)
+    
+    -- Set GPS route if requested (e.g., for viewing bookings)
+    if opts.enableRoute then
+        SetBlipRoute(blip, true)
+        SetBlipRouteColour(blip, 2) -- Green route
+    end
+    
+    PropertyBlips[propertyId] = blip
+    
+    if Config.Debug then
+        print('[Property Manager] Created blip for property: ' .. propertyId)
+    end
+end
+
+-- Remove a property blip
+function RemovePropertyBlip(propertyId)
+    if PropertyBlips[propertyId] then
+        RemoveBlip(PropertyBlips[propertyId])
+        PropertyBlips[propertyId] = nil
+        
+        if Config.Debug then
+            print('[Property Manager] Removed blip for property: ' .. propertyId)
         end
     end
 end
 
+-- Clear all property blips (on resource stop)
+function ClearAllPropertyBlips()
+    for propertyId, blip in pairs(PropertyBlips) do
+        RemoveBlip(blip)
+    end
+    PropertyBlips = {}
+end
+
+-- Legacy function - now only used for player-specific sync
+function CreatePropertyBlips()
+    -- This function is now only called when player needs to sync their active properties
+    -- It should NOT be called on resource start or when receiving all properties
+    -- Instead, use the event-driven approach with bookingConfirmed events
+end
+
+-- Legacy function - kept for compatibility but should not be used
 function CreatePropertyBlip(property)
-    -- Sicherheitscheck: Keine Blips für verfügbare Häuser!
-    if property.status == 'available' then
-        return
-    end
-    
-    local blipConfig = Config.Properties.blips.available
-    
-    if property.status == 'owned' then
-        blipConfig = Config.Properties.blips.owned
-    elseif property.status == 'rented' then
-        blipConfig = Config.Properties.blips.rented
-    elseif property.status == 'viewing' then
-        blipConfig = Config.Properties.blips.viewing
-    end
-    
-    local blip = AddBlipForCoord(property.entrance_x, property.entrance_y, property.entrance_z)
-    SetBlipSprite(blip, blipConfig.sprite)
-    SetBlipDisplay(blip, 4)
-    SetBlipScale(blip, blipConfig.scale)
-    SetBlipColour(blip, blipConfig.color)
-    SetBlipAsShortRange(blip, blipConfig.shortRange)
-    SetBlipAlpha(blip, blipConfig.alpha)
-    
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentSubstringPlayerName(property.name)
-    EndTextCommandSetBlipName(blip)
-    
-    propertyBlips[property.id] = blip
+    -- DEPRECATED: Use CreateOrUpdatePropertyBlip instead
+    -- This ensures blips are only created via server events
 end
 
 function UpdatePropertyBlip(propertyId)
@@ -1224,3 +1349,46 @@ exports('GetPlayerBookings', function() return playerBookings end)
 exports('OpenPropertyMenu', OpenPropertyMenu)
 exports('OpenAccessCodeInput', OpenAccessCodeInput)
 exports('OpenKeyManagementUI', OpenKeyManagementUI)
+
+-- ====================================================================================================
+-- 🎮 PLAYER LOADED - SYNC ACCESS ON RELOG
+-- ====================================================================================================
+
+-- ESX Framework
+RegisterNetEvent('esx:playerLoaded')
+AddEventHandler('esx:playerLoaded', function(xPlayer)
+    -- Request sync of player's active property access
+    Citizen.Wait(2000) -- Wait for server to be ready
+    TriggerServerEvent('property:requestAccessSync')
+end)
+
+-- QBCore Framework
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded')
+AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
+    -- Request sync of player's active property access
+    Citizen.Wait(2000) -- Wait for server to be ready
+    TriggerServerEvent('property:requestAccessSync')
+end)
+
+-- ====================================================================================================
+-- 🛑 RESOURCE STOP - CLEANUP
+-- ====================================================================================================
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    
+    -- Clear all property blips
+    ClearAllPropertyBlips()
+    
+    -- Clear branch blips
+    for _, blip in pairs(BranchBlips) do
+        RemoveBlip(blip)
+    end
+    
+    -- Close any open UIs
+    if exports['Home_Manger'] and exports['Home_Manger'].CloseUI then
+        exports['Home_Manger']:CloseUI()
+    end
+    
+    print('[Property Manager] Resource stopped - cleaned up blips and UI')
+end)
