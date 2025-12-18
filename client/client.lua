@@ -239,6 +239,12 @@ function CreateOrUpdatePropertyBlip(propertyId, coords, opts)
     if opts.enableRoute then
         SetBlipRoute(blip, true)
         SetBlipRouteColour(blip, 2) -- Green route
+        
+        -- NEW: Also set GPS waypoint for easier navigation
+        SetNewWaypoint(coords.x, coords.y)
+        
+        -- Notify player that GPS is active
+        Notify('info', 'GPS aktiviert', 'Folge dem GPS-Wegpunkt zur Immobilie')
     end
     
     PropertyBlips[propertyId] = blip

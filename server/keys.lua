@@ -75,12 +75,8 @@ function GivePropertyKey(propertyId, holder, permissionLevel, givenBy)
             })
         end
         
-        -- Give physical key item if enabled
-        if Config.Keys.usePhysicalKeys then
-            -- Note: Requires inventory integration (ox_inventory, qb-inventory, etc.)
-            -- Uncomment and adapt to your inventory system:
-            -- exports['ox_inventory']:AddItem(holder, Config.Keys.keyItem, 1, {property_id = propertyId, permission = permissionLevel})
-        end
+        -- Give physical key item (ESX/QBCore inventory integration)
+        GivePhysicalKey(holder, propertyId, permissionLevel)
     end)
     
     return true
@@ -98,12 +94,8 @@ function RemovePropertyKey(propertyId, holder)
         ['@holder'] = holder
     })
     
-    -- Remove physical key item if enabled
-    if Config.Keys.usePhysicalKeys then
-        -- Note: Requires inventory integration (ox_inventory, qb-inventory, etc.)
-        -- Uncomment and adapt to your inventory system:
-        -- exports['ox_inventory']:RemoveItem(holder, Config.Keys.keyItem, 1, {property_id = propertyId})
-    end
+    -- Remove physical key item (ESX/QBCore inventory integration)
+    RemovePhysicalKey(holder, propertyId)
     
     return true
 end
@@ -373,6 +365,111 @@ AddEventHandler('property:getKeyHolders', function(propertyId)
 end)
 
 -- ====================================================================================================
+-- 🔑 PHYSICAL KEY ITEM SYSTEM (ESX/QBCore Inventory Integration)
+-- ====================================================================================================
+
+function GivePhysicalKey(identifier, propertyId, permissionLevel)
+    -- Get player source from identifier
+    local source = GetPlayerFromIdentifier(identifier)
+    if not source then return false end
+    
+    -- Get property info for key label
+    local property = GetPropertyById(propertyId)
+    if not property then return false end
+    
+    -- Key item name format: property_key_[propertyId]
+    local keyItemName = 'property_key_' .. propertyId
+    
+    -- Framework-specific inventory integration
+    if Framework == 'ESX' then
+        local xPlayer = ESX.GetPlayerFromId(source)
+        if xPlayer then
+            xPlayer.addInventoryItem(keyItemName, 1, {
+                property_id = propertyId,
+                property_name = property.name,
+                permission = permissionLevel,
+                description = 'Schlüssel für ' .. property.name
+            })
+            return true
+        end
+    elseif Framework == 'QBCore' then
+        local Player = QBCore.Functions.GetPlayer(source)
+        if Player then
+            Player.Functions.AddItem(keyItemName, 1, false, {
+                property_id = propertyId,
+                property_name = property.name,
+                permission = permissionLevel,
+                description = 'Schlüssel für ' .. property.name
+            })
+            TriggerClientEvent('inventory:client:ItemBox', source, QBCore.Shared.Items[keyItemName], 'add')
+            return true
+        end
+    end
+    
+    return false
+end
+
+function RemovePhysicalKey(identifier, propertyId)
+    -- Get player source from identifier
+    local source = GetPlayerFromIdentifier(identifier)
+    if not source then return false end
+    
+    -- Key item name
+    local keyItemName = 'property_key_' .. propertyId
+    
+    -- Framework-specific inventory integration
+    if Framework == 'ESX' then
+        local xPlayer = ESX.GetPlayerFromId(source)
+        if xPlayer then
+            xPlayer.removeInventoryItem(keyItemName, 1)
+            return true
+        end
+    elseif Framework == 'QBCore' then
+        local Player = QBCore.Functions.GetPlayer(source)
+        if Player then
+            Player.Functions.RemoveItem(keyItemName, 1)
+            TriggerClientEvent('inventory:client:ItemBox', source, QBCore.Shared.Items[keyItemName], 'remove')
+            return true
+        end
+    end
+    
+    return false
+end
+
+function HasPropertyKeyItem(source, propertyId)
+    -- Check if player has physical key item in inventory
+    local keyItemName = 'property_key_' .. propertyId
+    
+    if Framework == 'ESX' then
+        local xPlayer = ESX.GetPlayerFromId(source)
+        if xPlayer then
+            local item = xPlayer.getInventoryItem(keyItemName)
+            return item and item.count > 0
+        end
+    elseif Framework == 'QBCore' then
+        local Player = QBCore.Functions.GetPlayer(source)
+        if Player then
+            local item = Player.Functions.GetItemByName(keyItemName)
+            return item ~= nil
+        end
+    end
+    
+    return false
+end
+
+function GetPlayerFromIdentifier(identifier)
+    -- Find player source from identifier
+    local players = GetPlayers()
+    for _, playerId in ipairs(players) do
+        local playerIdentifier = GetPlayerIdentifier(playerId, 0)
+        if playerIdentifier == identifier then
+            return tonumber(playerId)
+        end
+    end
+    return nil
+end
+
+-- ====================================================================================================
 -- 📤 EXPORTS
 -- ====================================================================================================
 
@@ -384,3 +481,7 @@ exports('ValidateShortTermKey', ValidateShortTermKey)
 exports('AddPropertyKey', function(propertyId, identifier, permissionLevel)
     return GivePropertyKey(propertyId, identifier, permissionLevel, 'system')
 end)
+
+exports('HasPropertyKeyItem', HasPropertyKeyItem)
+exports('GivePhysicalKey', GivePhysicalKey)
+exports('RemovePhysicalKey', RemovePhysicalKey)
