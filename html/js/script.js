@@ -122,8 +122,9 @@ function closeUI() {
     filteredProperties = [];
     allProperties = [];
     
-    // Tell game to close (send message)
-    sendMessage('close');
+    // DO NOT SEND MESSAGE BACK TO GAME - Prevents callback loop
+    // Game already knows we're closing from Lua side
+    // sendMessage('close'); // REMOVED - causes freeze
     
     // Re-show container after brief delay (for next open)
     setTimeout(() => {

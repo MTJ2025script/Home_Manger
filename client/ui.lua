@@ -10,33 +10,47 @@
 local uiOpen = false
 
 function CloseUI()
-    -- STEP 1: Send immediate force close to NUI
+    local playerId = PlayerId()
+    local playerPed = PlayerPedId()
+    
+    -- IMMEDIATE: Remove NUI focus FIRST (most critical)
+    SetNuiFocus(false, false)
+    SetNuiFocusKeepInput(false)
+    
+    -- IMMEDIATE: Unfreeze player entity
+    FreezeEntityPosition(playerPed, false)
+    
+    -- IMMEDIATE: Force all controls enabled
+    SetPlayerControl(playerId, true, 0)
+    EnableAllControlActions(0)
+    EnableAllControlActions(1)
+    EnableAllControlActions(2)
+    
+    -- IMMEDIATE: Destroy all cameras
+    local renderCam = GetRenderingCam()
+    if renderCam and renderCam ~= -1 then
+        SetCamActive(renderCam, false)
+    end
+    DestroyAllCams(true)
+    RenderScriptCams(false, false, 0, true, true)
+    
+    -- IMMEDIATE: Restore HUD
+    DisplayRadar(true)
+    DisplayHud(true)
+    
+    -- THEN: Send NUI close message (after everything freed)
     SendNUIMessage({
         action = 'forceClose'
     })
     
-    -- STEP 2: Wait tiny moment for NUI to process
-    Citizen.Wait(10)
+    -- Small wait for cleanup
+    Citizen.Wait(5)
     
-    -- STEP 3: Remove NUI focus completely
-    SetNuiFocus(false, false)
-    SetNuiFocusKeepInput(false)
+    -- FINAL: Additional control restoration
+    SetPlayerInvincible(playerId, false)
+    ClearPedTasksImmediately(playerPed)
     
-    -- STEP 4: Force camera and control freedom
-    local playerId = PlayerId()
-    SetPlayerControl(playerId, true, 0)
-    
-    -- STEP 5: Restore HUD
-    DisplayRadar(true)
-    
-    -- STEP 6: Ensure all script cameras disabled
-    RenderScriptCams(false, false, 0, true, true)
-    
-    -- STEP 7: Additional camera freedom check
-    SetCamActive(GetRenderingCam(), false)
-    DestroyAllCams(true)
-    
-    -- STEP 8: Update state
+    -- Update state
     uiOpen = false
     
     -- Update global state
@@ -47,7 +61,7 @@ function CloseUI()
     end
     
     if Config.Debug then
-        print('[Property Manager] Force Close - All systems freed')
+        print('[Property Manager] AGGRESSIVE Force Close - All systems freed')
     end
 end
 
