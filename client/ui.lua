@@ -8,8 +8,19 @@
 -- ====================================================================================================
 
 local uiOpen = false
+local uiClosing = false -- Prevent multiple simultaneous closes
+local lastUIClose = 0 -- Track last close time for cooldown
 
 function CloseUI()
+    -- CRITICAL: Prevent multiple simultaneous closes
+    if uiClosing then
+        print('[Property Manager] ⚠️ Already closing UI, skipping duplicate call')
+        return
+    end
+    
+    -- Set closing flag
+    uiClosing = true
+    
     print('[Property Manager] ========== CLOSE UI START ==========')
     local playerId = PlayerId()
     local playerPed = PlayerPedId()
@@ -78,15 +89,16 @@ function CloseUI()
     ClearPedTasksImmediately(playerPed)
     print('[Property Manager] Step 9: Ped tasks cleared ✓')
     
-    -- STEP 10: Update state
+    -- STEP 10: Update state with cooldown
     print('[Property Manager] Step 10: Updating state...')
     uiOpen = false
+    lastUIClose = GetGameTimer()
     
     -- Update global state
     if _G.PropertyUIState then
         _G.PropertyUIState.isOpen = false
         _G.PropertyUIState.currentUI = nil
-        _G.PropertyUIState.lastClose = GetGameTimer()
+        _G.PropertyUIState.lastClose = lastUIClose
         print('[Property Manager] Global state updated - lastClose:', _G.PropertyUIState.lastClose)
     end
     print('[Property Manager] Step 10: State updated ✓')
@@ -98,6 +110,12 @@ function CloseUI()
     print('[Property Manager] Can player move:', not IsEntityPositionFrozen(playerPed))
     print('[Property Manager] UI Open state:', uiOpen)
     print('[Property Manager] ========== CLOSE UI COMPLETE ==========')
+    
+    -- CRITICAL: Wait 2 seconds before allowing next UI operation
+    print('[Property Manager] ⏱️ Starting 2-second cooldown...')
+    Citizen.Wait(2000)
+    uiClosing = false
+    print('[Property Manager] ✅ Cooldown complete - UI can be opened again')
 end
 
 -- Export for external use

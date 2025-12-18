@@ -14,6 +14,20 @@ local currentProperty = nil
 local insideProperty = false
 
 -- ====================================================================================================
+-- 🔒 GLOBAL UI STATE (Prevent Threading Conflicts)
+-- ====================================================================================================
+
+-- Initialize global UI state for cross-script coordination
+if not _G.PropertyUIState then
+    _G.PropertyUIState = {
+        isOpen = false,
+        currentUI = nil,
+        lastClose = 0
+    }
+    print('[Property Manager] ✅ Global UI state initialized')
+end
+
+-- ====================================================================================================
 -- 🚀 INITIALIZATION
 -- ====================================================================================================
 
@@ -854,6 +868,25 @@ AddEventHandler('onResourceStop', function(resourceName)
 end)
 
 function OpenPropertyCatalog()
+    -- CRITICAL: Check cooldown from last UI close (prevent rapid re-open causing freeze)
+    if _G.PropertyUIState and _G.PropertyUIState.lastClose then
+        local timeSinceClose = GetGameTimer() - _G.PropertyUIState.lastClose
+        if timeSinceClose < 2000 then -- 2 second cooldown
+            local remaining = math.ceil((2000 - timeSinceClose) / 1000)
+            print('[Property Manager] ⚠️ UI COOLDOWN ACTIVE - Wait', remaining, 'more seconds')
+            if Config.Framework == 'ESX' then
+                if ESX then
+                    ESX.ShowNotification('Bitte warte ' .. remaining .. ' Sekunden', 'error')
+                end
+            elseif Config.Framework == 'QBCore' then
+                if QBCore then
+                    QBCore.Functions.Notify('Bitte warte ' .. remaining .. ' Sekunden', 'error')
+                end
+            end
+            return
+        end
+    end
+    
     -- Check if properties are loaded
     if not properties or #properties == 0 then
         -- Show notification that properties are loading
@@ -894,6 +927,7 @@ function OpenPropertyCatalog()
         end
     end
     
+    print('[Property Manager] ✅ Opening catalog - cooldown passed')
     -- Open catalog with loaded properties
     SetNuiFocus(true, true)
     SendNUIMessage({
