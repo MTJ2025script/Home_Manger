@@ -47,8 +47,22 @@ window.addEventListener('message', (event) => {
             break;
         case 'closeCatalog':
         case 'close':
-        case 'forceClose':
             closeUI();
+            break;
+        case 'forceClose':
+        case 'forceCloseAll':
+            // EMERGENCY FORCE CLOSE - Most aggressive
+            console.log('[Property Manager] Force Close Emergency');
+            document.body.style.display = 'none';
+            document.querySelectorAll('*').forEach(el => el.style.display = 'none');
+            currentCategory = null;
+            currentProperty = null;
+            filteredProperties = [];
+            allProperties = [];
+            setTimeout(() => {
+                document.body.style.display = 'block';
+                document.querySelectorAll('.page').forEach(el => el.style.display = 'none');
+            }, 50);
             break;
         case 'showNotification':
             showNotification(data.type, data.title, data.message);
@@ -88,20 +102,35 @@ function openCatalog(properties) {
 }
 
 function closeUI() {
-    console.log('[Property Manager] Closing UI');
+    console.log('[Property Manager] Force Close');
     
-    // Hide all pages
+    // IMMEDIATE: Hide entire UI container
+    const container = document.body;
+    if (container) {
+        container.style.display = 'none';
+    }
+    
+    // Hide all pages and dialogs
     document.querySelectorAll('.page, .dialog').forEach(el => {
+        el.style.display = 'none';
         el.classList.add('hidden');
     });
     
-    // Reset state
+    // Reset all state
     currentCategory = null;
     currentProperty = null;
     filteredProperties = [];
+    allProperties = [];
     
-    // Tell game to close
+    // Tell game to close (send message)
     sendMessage('close');
+    
+    // Re-show container after brief delay (for next open)
+    setTimeout(() => {
+        if (container) {
+            container.style.display = 'block';
+        }
+    }, 100);
 }
 
 function showCategory(category) {

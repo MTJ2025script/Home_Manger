@@ -10,26 +10,44 @@
 local uiOpen = false
 
 function CloseUI()
-    -- Always clean up focus properly to prevent freeze
+    -- STEP 1: Send immediate force close to NUI
+    SendNUIMessage({
+        action = 'forceClose'
+    })
+    
+    -- STEP 2: Wait tiny moment for NUI to process
+    Citizen.Wait(10)
+    
+    -- STEP 3: Remove NUI focus completely
     SetNuiFocus(false, false)
     SetNuiFocusKeepInput(false)
     
-    -- FORCE camera and control freedom (prevents freeze)
-    SetPlayerControl(PlayerId(), true, 0)
+    -- STEP 4: Force camera and control freedom
+    local playerId = PlayerId()
+    SetPlayerControl(playerId, true, 0)
+    
+    -- STEP 5: Restore HUD
     DisplayRadar(true)
     
-    -- Ensure camera is free
+    -- STEP 6: Ensure all script cameras disabled
     RenderScriptCams(false, false, 0, true, true)
     
-    -- Send close message to NUI
-    SendNUIMessage({
-        action = 'close'
-    })
+    -- STEP 7: Additional camera freedom check
+    SetCamActive(GetRenderingCam(), false)
+    DestroyAllCams(true)
     
+    -- STEP 8: Update state
     uiOpen = false
     
+    -- Update global state
+    if _G.PropertyUIState then
+        _G.PropertyUIState.isOpen = false
+        _G.PropertyUIState.currentUI = nil
+        _G.PropertyUIState.lastClose = GetGameTimer()
+    end
+    
     if Config.Debug then
-        print('[Property Manager] UI closed properly - focus and camera freed')
+        print('[Property Manager] Force Close - All systems freed')
     end
 end
 
