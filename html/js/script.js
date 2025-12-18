@@ -28,7 +28,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // ESC key handler
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
+            console.log('[Property Manager] ===== ESC KEY PRESSED =====');
+            console.log('[Property Manager] Calling closeUI() from ESC handler');
             closeUI();
+            console.log('[Property Manager] closeUI() returned from ESC handler');
         }
     });
 });
@@ -47,22 +50,30 @@ window.addEventListener('message', (event) => {
             break;
         case 'closeCatalog':
         case 'close':
+            console.log('[Property Manager] Received close action - calling closeUI()');
             closeUI();
             break;
         case 'forceClose':
         case 'forceCloseAll':
             // EMERGENCY FORCE CLOSE - Most aggressive
-            console.log('[Property Manager] Force Close Emergency');
+            console.log('[Property Manager] ========== EMERGENCY FORCE CLOSE ==========');
+            console.log('[Property Manager] Hiding EVERYTHING immediately');
             document.body.style.display = 'none';
-            document.querySelectorAll('*').forEach(el => el.style.display = 'none');
+            const allElements = document.querySelectorAll('*');
+            console.log('[Property Manager] Hiding', allElements.length, 'elements');
+            allElements.forEach(el => el.style.display = 'none');
             currentCategory = null;
             currentProperty = null;
             filteredProperties = [];
             allProperties = [];
+            console.log('[Property Manager] Emergency: All state cleared');
             setTimeout(() => {
+                console.log('[Property Manager] Emergency: Restoring container');
                 document.body.style.display = 'block';
                 document.querySelectorAll('.page').forEach(el => el.style.display = 'none');
+                console.log('[Property Manager] Emergency: Container restored');
             }, 50);
+            console.log('[Property Manager] ========== EMERGENCY COMPLETE ==========');
             break;
         case 'showNotification':
             showNotification(data.type, data.title, data.message);
@@ -102,36 +113,57 @@ function openCatalog(properties) {
 }
 
 function closeUI() {
-    console.log('[Property Manager] Force Close');
+    console.log('[Property Manager] ========== JS CLOSE UI START ==========');
     
-    // IMMEDIATE: Hide entire UI container
+    // STEP 1: Hide entire UI container IMMEDIATELY
+    console.log('[Property Manager] JS Step 1: Hiding body...');
     const container = document.body;
     if (container) {
+        const wasVisible = container.style.display !== 'none';
+        console.log('[Property Manager] Body was visible:', wasVisible);
         container.style.display = 'none';
+        console.log('[Property Manager] Body display now:', container.style.display);
     }
+    console.log('[Property Manager] JS Step 1: Body hidden ✓');
     
-    // Hide all pages and dialogs
-    document.querySelectorAll('.page, .dialog').forEach(el => {
+    // STEP 2: Hide all pages and dialogs
+    console.log('[Property Manager] JS Step 2: Hiding all elements...');
+    const elements = document.querySelectorAll('.page, .dialog');
+    console.log('[Property Manager] Found', elements.length, 'elements to hide');
+    elements.forEach(el => {
         el.style.display = 'none';
         el.classList.add('hidden');
     });
+    console.log('[Property Manager] JS Step 2: All elements hidden ✓');
     
-    // Reset all state
+    // STEP 3: Reset all state
+    console.log('[Property Manager] JS Step 3: Resetting state...');
+    console.log('[Property Manager] Current category:', currentCategory);
+    console.log('[Property Manager] Current property:', currentProperty);
+    console.log('[Property Manager] Properties count:', allProperties.length);
     currentCategory = null;
     currentProperty = null;
     filteredProperties = [];
     allProperties = [];
+    console.log('[Property Manager] State reset - all null/empty');
+    console.log('[Property Manager] JS Step 3: State reset ✓');
     
-    // DO NOT SEND MESSAGE BACK TO GAME - Prevents callback loop
-    // Game already knows we're closing from Lua side
-    // sendMessage('close'); // REMOVED - causes freeze
+    // STEP 4: DO NOT SEND MESSAGE BACK
+    console.log('[Property Manager] JS Step 4: NOT sending callback to game (prevents loop)');
+    console.log('[Property Manager] JS Step 4: Callback skipped ✓');
     
-    // Re-show container after brief delay (for next open)
+    // STEP 5: Re-show container after brief delay (for next open)
+    console.log('[Property Manager] JS Step 5: Scheduling container restore in 100ms...');
     setTimeout(() => {
         if (container) {
+            console.log('[Property Manager] Restoring container display...');
             container.style.display = 'block';
+            console.log('[Property Manager] Container restored for next use');
         }
     }, 100);
+    console.log('[Property Manager] JS Step 5: Restore scheduled ✓');
+    
+    console.log('[Property Manager] ========== JS CLOSE UI COMPLETE ==========');
 }
 
 function showCategory(category) {

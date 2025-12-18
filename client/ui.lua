@@ -10,47 +10,76 @@
 local uiOpen = false
 
 function CloseUI()
+    print('[Property Manager] ========== CLOSE UI START ==========')
     local playerId = PlayerId()
     local playerPed = PlayerPedId()
+    print('[Property Manager] Player ID:', playerId, 'Ped:', playerPed)
     
-    -- IMMEDIATE: Remove NUI focus FIRST (most critical)
+    -- STEP 1: Remove NUI focus FIRST (most critical)
+    print('[Property Manager] Step 1: Removing NUI focus...')
     SetNuiFocus(false, false)
     SetNuiFocusKeepInput(false)
+    print('[Property Manager] Step 1: NUI focus removed ✓')
     
-    -- IMMEDIATE: Unfreeze player entity
+    -- STEP 2: Unfreeze player entity
+    print('[Property Manager] Step 2: Unfreezing player entity...')
+    local wasFrozen = IsEntityPositionFrozen(playerPed)
+    print('[Property Manager] Player was frozen:', wasFrozen)
     FreezeEntityPosition(playerPed, false)
+    local isFrozenNow = IsEntityPositionFrozen(playerPed)
+    print('[Property Manager] Player frozen now:', isFrozenNow)
+    print('[Property Manager] Step 2: Player unfrozen ✓')
     
-    -- IMMEDIATE: Force all controls enabled
+    -- STEP 3: Force all controls enabled
+    print('[Property Manager] Step 3: Enabling all controls...')
     SetPlayerControl(playerId, true, 0)
     EnableAllControlActions(0)
     EnableAllControlActions(1)
     EnableAllControlActions(2)
+    print('[Property Manager] Step 3: Controls enabled ✓')
     
-    -- IMMEDIATE: Destroy all cameras
+    -- STEP 4: Destroy all cameras
+    print('[Property Manager] Step 4: Destroying cameras...')
     local renderCam = GetRenderingCam()
+    print('[Property Manager] Render camera handle:', renderCam)
     if renderCam and renderCam ~= -1 then
         SetCamActive(renderCam, false)
+        print('[Property Manager] Deactivated render camera')
     end
     DestroyAllCams(true)
     RenderScriptCams(false, false, 0, true, true)
+    print('[Property Manager] Step 4: Cameras destroyed ✓')
     
-    -- IMMEDIATE: Restore HUD
+    -- STEP 5: Restore HUD
+    print('[Property Manager] Step 5: Restoring HUD...')
     DisplayRadar(true)
     DisplayHud(true)
+    print('[Property Manager] Step 5: HUD restored ✓')
     
-    -- THEN: Send NUI close message (after everything freed)
+    -- STEP 6: Send NUI close message (after everything freed)
+    print('[Property Manager] Step 6: Sending NUI close message...')
     SendNUIMessage({
         action = 'forceClose'
     })
+    print('[Property Manager] Step 6: NUI message sent ✓')
     
-    -- Small wait for cleanup
+    -- STEP 7: Small wait for cleanup
+    print('[Property Manager] Step 7: Waiting 5ms for cleanup...')
     Citizen.Wait(5)
+    print('[Property Manager] Step 7: Wait complete ✓')
     
-    -- FINAL: Additional control restoration
+    -- STEP 8: Additional control restoration
+    print('[Property Manager] Step 8: Additional cleanup...')
     SetPlayerInvincible(playerId, false)
-    ClearPedTasksImmediately(playerPed)
+    print('[Property Manager] Step 8: Invincibility disabled ✓')
     
-    -- Update state
+    -- STEP 9: Clear ped tasks
+    print('[Property Manager] Step 9: Clearing ped tasks...')
+    ClearPedTasksImmediately(playerPed)
+    print('[Property Manager] Step 9: Ped tasks cleared ✓')
+    
+    -- STEP 10: Update state
+    print('[Property Manager] Step 10: Updating state...')
     uiOpen = false
     
     -- Update global state
@@ -58,11 +87,17 @@ function CloseUI()
         _G.PropertyUIState.isOpen = false
         _G.PropertyUIState.currentUI = nil
         _G.PropertyUIState.lastClose = GetGameTimer()
+        print('[Property Manager] Global state updated - lastClose:', _G.PropertyUIState.lastClose)
     end
+    print('[Property Manager] Step 10: State updated ✓')
     
-    if Config.Debug then
-        print('[Property Manager] AGGRESSIVE Force Close - All systems freed')
-    end
+    -- FINAL CHECK
+    print('[Property Manager] ========== FINAL CHECK ==========')
+    print('[Property Manager] NUI Focus should be false')
+    print('[Property Manager] Player frozen:', IsEntityPositionFrozen(playerPed))
+    print('[Property Manager] Can player move:', not IsEntityPositionFrozen(playerPed))
+    print('[Property Manager] UI Open state:', uiOpen)
+    print('[Property Manager] ========== CLOSE UI COMPLETE ==========')
 end
 
 -- Export for external use
