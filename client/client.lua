@@ -1099,6 +1099,11 @@ RegisterNUICallback('propertyMenuAction', function(data, cb)
         OpenAccessCodeInput(propertyId)
     elseif action == 'close' then
         SetNuiFocus(false, false)
+        SetNuiFocusKeepInput(false)
+        -- Force camera and control freedom
+        SetPlayerControl(PlayerId(), true, 0)
+        DisplayRadar(true)
+        RenderScriptCams(false, false, 0, true, true)
     end
     
     cb('ok')
@@ -1150,6 +1155,11 @@ AddEventHandler('property:codeValidated', function(propertyId, keyData)
     })
     
     SetNuiFocus(false, false)
+    SetNuiFocusKeepInput(false)
+    -- Force camera and control freedom
+    SetPlayerControl(PlayerId(), true, 0)
+    DisplayRadar(true)
+    RenderScriptCams(false, false, 0, true, true)
     
     -- Now player can enter
     EnterProperty(propertyId)
@@ -1201,6 +1211,11 @@ RegisterNUICallback('keyManagementAction', function(data, cb)
         TriggerServerEvent('property:duplicateKeys', propertyId, paymentMethod)
     elseif action == 'close' then
         SetNuiFocus(false, false)
+        SetNuiFocusKeepInput(false)
+        -- Force camera and control freedom
+        SetPlayerControl(PlayerId(), true, 0)
+        DisplayRadar(true)
+        RenderScriptCams(false, false, 0, true, true)
     end
     
     cb('ok')

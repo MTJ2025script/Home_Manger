@@ -14,6 +14,13 @@ function CloseUI()
     SetNuiFocus(false, false)
     SetNuiFocusKeepInput(false)
     
+    -- FORCE camera and control freedom (prevents freeze)
+    SetPlayerControl(PlayerId(), true, 0)
+    DisplayRadar(true)
+    
+    -- Ensure camera is free
+    RenderScriptCams(false, false, 0, true, true)
+    
     -- Send close message to NUI
     SendNUIMessage({
         action = 'close'
@@ -22,7 +29,7 @@ function CloseUI()
     uiOpen = false
     
     if Config.Debug then
-        print('[Property Manager] UI closed properly - focus cleaned')
+        print('[Property Manager] UI closed properly - focus and camera freed')
     end
 end
 

@@ -44,6 +44,11 @@ end)
 RegisterNUICallback('retrieveVehicle', function(data, cb)
     TriggerServerEvent('property:retrieveVehicle', data.propertyId, data.vehicleId)
     SetNuiFocus(false, false)
+    SetNuiFocusKeepInput(false)
+    -- Force camera and control freedom
+    SetPlayerControl(PlayerId(), true, 0)
+    DisplayRadar(true)
+    RenderScriptCams(false, false, 0, true, true)
     cb('ok')
 end)
 
