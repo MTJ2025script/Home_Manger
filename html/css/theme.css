@@ -1,0 +1,103 @@
+/* ====================================================================================================
+   🎨 THEME & COLORS
+   Dark/Neon Theme with Glassmorphism
+   ==================================================================================================== */
+
+:root {
+    /* Primary Colors - LIGHTER THEME */
+    --primary: #6366f1;        /* Indigo */
+    --secondary: #3b82f6;      /* Blue */
+    --accent: #f59e0b;         /* Gold/Orange */
+    
+    /* Status Colors */
+    --success: #10b981;        /* Green */
+    --danger: #ef4444;         /* Red */
+    --warning: #f59e0b;        /* Orange */
+    --info: #3b82f6;           /* Blue */
+    
+    /* Background Colors - LIGHTER */
+    --background: #f8fafc;     /* Very Light Gray */
+    --surface: #ffffff;        /* White */
+    --card: #f1f5f9;           /* Light Gray */
+    --overlay: rgba(0, 0, 0, 0.5); /* Dark Overlay */
+    
+    /* Text Colors - DARKER FOR LIGHT THEME */
+    --text-primary: #1e293b;   /* Dark Slate */
+    --text-secondary: #475569; /* Slate */
+    --text-muted: #94a3b8;     /* Light Slate */
+    
+    /* Accent Colors */
+    --accent-blue: #3b82f6;    /* Blue */
+    --accent-purple: #8b5cf6;  /* Purple */
+    --accent-green: #10b981;   /* Green */
+    --accent-gold: #f59e0b;    /* Gold */
+}
+
+/* Glassmorphism Effect */
+.glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Neon Glow Effects */
+.neon-glow-blue {
+    box-shadow: 0 0 20px var(--neon-blue),
+                0 0 40px var(--neon-blue),
+                0 0 60px var(--neon-blue);
+}
+
+.neon-glow-purple {
+    box-shadow: 0 0 20px var(--neon-purple),
+                0 0 40px var(--neon-purple),
+                0 0 60px var(--neon-purple);
+}
+
+.neon-glow-pink {
+    box-shadow: 0 0 20px var(--neon-pink),
+                0 0 40px var(--neon-pink),
+                0 0 60px var(--neon-pink);
+}
+
+.neon-glow-green {
+    box-shadow: 0 0 20px var(--neon-green),
+                0 0 40px var(--neon-green),
+                0 0 60px var(--neon-green);
+}
+
+/* Gradient Backgrounds */
+.gradient-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+}
+
+.gradient-accent {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--danger) 100%);
+}
+
+.gradient-neon {
+    background: linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-blue) 100%);
+}
+
+/* Border Gradients */
+.border-gradient {
+    border: 2px solid transparent;
+    background-clip: padding-box, border-box;
+    background-origin: padding-box, border-box;
+    background-image: linear-gradient(to right, var(--background), var(--background)),
+                      linear-gradient(135deg, var(--primary), var(--accent));
+}
+
+/* Text Gradients */
+.text-gradient {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.text-neon {
+    color: var(--neon-blue);
+    text-shadow: 0 0 10px var(--neon-blue),
+                 0 0 20px var(--neon-blue),
+                 0 0 30px var(--neon-blue);
+}

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Manager - Makler Katalog</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+    <!-- Notification Container -->
+    <div id="notifications"></div>
+    
+    <!-- MAIN START PAGE - Category Selection -->
+    <div id="category-page" class="page hidden">
+        <div class="page-container">
+            <div class="page-header">
+                <h1>🏠 Immobilien Makler</h1>
+                <p class="subtitle">Wählen Sie eine Kategorie</p>
+                <button class="close-btn" onclick="closeUI()">&times;</button>
+            </div>
+            
+            <div class="category-grid">
+                <div class="category-card" onclick="showCategory('office')">
+                    <div class="category-icon">🏢</div>
+                    <h3>Büros</h3>
+                    <p>Geschäftsflächen</p>
+                </div>
+                
+                <div class="category-card" onclick="showCategory('house')">
+                    <div class="category-icon">🏠</div>
+                    <h3>Häuser</h3>
+                    <p>Einfamilienhäuser</p>
+                </div>
+                
+                <div class="category-card" onclick="showCategory('hotel')">
+                    <div class="category-icon">🏨</div>
+                    <h3>Hotels</h3>
+                    <p>Hotelzimmer</p>
+                </div>
+                
+                <div class="category-card" onclick="showCategory('apartment')">
+                    <div class="category-icon">🏘️</div>
+                    <h3>Apartments</h3>
+                    <p>Wohnungen</p>
+                </div>
+                
+                <div class="category-card" onclick="showCategory('villa')">
+                    <div class="category-icon">🏡</div>
+                    <h3>Villen</h3>
+                    <p>Luxusvillen</p>
+                </div>
+                
+                <div class="category-card" onclick="showCategory('mansion')">
+                    <div class="category-icon">🏰</div>
+                    <h3>Villen</h3>
+                    <p>Herrenhäuser</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PROPERTY LIST PAGE - Shows properties in selected category -->
+    <div id="property-list-page" class="page hidden">
+        <div class="page-container">
+            <div class="page-header">
+                <button class="back-btn" onclick="backToCategories()">← Zurück</button>
+                <h1 id="category-title">Immobilien</h1>
+                <button class="close-btn" onclick="closeUI()">&times;</button>
+            </div>
+            
+            <div id="property-grid" class="property-grid">
+                <!-- Properties will be dynamically inserted -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- PROPERTY DETAILS PAGE - Shows single property with actions -->
+    <div id="property-details-page" class="page hidden">
+        <div class="page-container">
+            <div class="page-header">
+                <button class="back-btn" onclick="backToPropertyList()">← Zurück</button>
+                <h1 id="detail-property-name">Immobilie</h1>
+                <button class="close-btn" onclick="closeUI()">&times;</button>
+            </div>
+            
+            <div class="property-details-content">
+                <!-- Property Image -->
+                <div class="property-image">
+                    <img id="detail-property-img" src="" alt="Property">
+                </div>
+                
+                <!-- Property Info -->
+                <div class="property-info-section">
+                    <h2 id="detail-property-title"></h2>
+                    <p class="property-price" id="detail-property-price"></p>
+                    
+                    <div class="property-specs">
+                        <div class="spec-item">
+                            <span class="spec-label">Typ:</span>
+                            <span id="detail-property-type"></span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Gebiet:</span>
+                            <span id="detail-property-area"></span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Schlafzimmer:</span>
+                            <span id="detail-property-bedrooms"></span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Badezimmer:</span>
+                            <span id="detail-property-bathrooms"></span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Garage:</span>
+                            <span id="detail-property-garage"></span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Status:</span>
+                            <span id="detail-property-status" class="status-badge"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="property-description">
+                        <h3>Beschreibung</h3>
+                        <p id="detail-property-description"></p>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="property-actions" id="property-actions">
+                    <!-- Buttons will be dynamically inserted based on status -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- VIEWING BOOKING DIALOG -->
+    <div id="viewing-dialog" class="dialog hidden">
+        <div class="dialog-container">
+            <h2>👁️ Besichtigung Buchen</h2>
+            <p>Buchen Sie eine 30-minütige Besichtigung dieser Immobilie.</p>
+            <p class="dialog-price">Kosten: <strong id="viewing-price">$500</strong></p>
+            <p class="dialog-info">Sie erhalten einen 4-stelligen Code für den Zugang.</p>
+            <div class="dialog-actions">
+                <button class="btn btn-secondary" onclick="closeViewingDialog()">Abbrechen</button>
+                <button class="btn btn-primary" onclick="confirmViewing()">Besichtigung Buchen</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- RENT DIALOG -->
+    <div id="rent-dialog" class="dialog hidden">
+        <div class="dialog-container">
+            <h2>🔑 Immobilie Mieten</h2>
+            <p>Mieten Sie diese Immobilie monatlich.</p>
+            <p class="dialog-price">Monatliche Miete: <strong id="rent-monthly">$2,000</strong></p>
+            <p class="dialog-price">Kaution: <strong id="rent-deposit">$4,000</strong></p>
+            <p class="dialog-info">Die Miete wird automatisch jeden Monat abgebucht.</p>
+            <div class="dialog-actions">
+                <button class="btn btn-secondary" onclick="closeRentDialog()">Abbrechen</button>
+                <button class="btn btn-primary" onclick="confirmRent()">Jetzt Mieten</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PURCHASE DIALOG -->
+    <div id="purchase-dialog" class="dialog hidden">
+        <div class="dialog-container">
+            <h2>💰 Immobilie Kaufen</h2>
+            <p>Kaufen Sie diese Immobilie sofort.</p>
+            <p class="dialog-price">Kaufpreis: <strong id="purchase-price">$100,000</strong></p>
+            <div class="payment-methods">
+                <h3>Zahlungsmethode:</h3>
+                <label>
+                    <input type="radio" name="payment" value="cash" checked>
+                    Bar bezahlen
+                </label>
+                <label>
+                    <input type="radio" name="payment" value="bank">
+                    Bank transfer
+                </label>
+                <label>
+                    <input type="radio" name="payment" value="mortgage">
+                    Hypothek (Finanzierung)
+                </label>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn btn-secondary" onclick="closePurchaseDialog()">Abbrechen</button>
+                <button class="btn btn-primary" onclick="confirmPurchase()">Jetzt Kaufen</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/script.js"></script>
+</body>
+</html>
